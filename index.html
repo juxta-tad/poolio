@@ -1,4 +1,11 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1a20">
+<meta name="description" content="Pool.io: a pool battle on one giant table. Pot balls, knock rivals off, play party games with friends.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23f4eddc'/%3E%3Ccircle cx='23' cy='22' r='8' fill='%237cc6f4'/%3E%3C/svg%3E">
 <title>Pool.io</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -208,6 +215,9 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 .pcard .lgames{font-size:13px;color:var(--muted)}
 .netst{min-height:1.4em;margin:16px 0 0;font:700 14px var(--f-ui);color:var(--muted)}
 .netst.bad{color:var(--danger)}
+#netLog{position:fixed;left:0;right:0;bottom:0;z-index:99;max-height:38vh;display:flex;flex-direction:column;align-items:flex-end;pointer-events:none;padding:0 0 env(safe-area-inset-bottom,0px)}
+#netLog pre{margin:0;align-self:stretch;overflow:hidden;background:rgba(0,0,0,.78);color:#a6f4a6;font:10.5px/1.3 ui-monospace,Menlo,monospace;padding:6px 8px;white-space:pre-wrap;word-break:break-all}
+#netLog button{pointer-events:auto;margin:0 6px 4px 0;font:700 12px var(--f-ui);background:#000;color:#a6f4a6;border:1px solid #a6f4a6;border-radius:6px;padding:5px 9px}
 #roomTag{top:calc(62px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));font:700 13px var(--f-ui);color:var(--soft);background:rgba(6,24,30,.5);border-radius:var(--r);padding:5px 10px;white-space:nowrap;text-shadow:none}
 #roomTag b{font:400 15px var(--f-title);letter-spacing:.12em;color:var(--gold);-webkit-text-stroke:1.2px #000;paint-order:stroke fill;text-shadow:var(--ol-s);margin-left:4px}
 .youb{flex:none;width:48px;height:48px;padding:0;border:0;background:none;cursor:pointer;border-radius:50%}
@@ -299,7 +309,8 @@ body.pc #rbTime{font-size:30px}
 body.pc #score{font-size:24px}
 body.pc .br{width:136px;height:136px}
 </style>
-
+</head>
+<body>
 <div id="sky" aria-hidden="true" hidden></div>
 <canvas id="game" aria-hidden="true"></canvas>
 <canvas id="balls" aria-hidden="true"></canvas>
@@ -5810,13 +5821,89 @@ function putState(w, s) { w.u8(s[0]); w.vi(s[1]); w.zz(s[2]); w.u8(s[3]); w.vi(s
 function getState(r) { return [r.u8(), r.vi(), r.zz(), r.u8(), r.vi(), r.vi(), r.u8(), r.vi(), r.u8()]; }
 // ---- the link: PeerJS, or the test harness's stand-in ----
 // a link has send(obj) (reliable), fast(buf) (unreliable), and on.rel / on.fast / on.close handlers
+// ---- the connection log ----
+// Every step of hosting and joining goes to the console as a [net] line. Opened with ?netlog in the
+// address, the page also shows the last lines on screen (a phone's console is hard to get at), with a
+// button to copy the lot.
+const NETLOG = /[?&#]netlog\b/i.test(location.search + location.hash);
+const netLines = [];
+let netLogEl = null;
+const netFmt = v => v instanceof Error ? `${v.type ? v.type + ': ' : ''}${v.message}` : v && typeof v === 'object' ? (v.type || v.message ? `${v.type || ''} ${v.message || ''}`.trim() : JSON.stringify(v)) : String(v);
+function netLog(...a) {
+  console.log('[net]', ...a);
+  netLines.push(`${(performance.now() / 1000).toFixed(2)} ${a.map(netFmt).join(' ')}`);
+  if (netLines.length > 400) netLines.shift();
+  if (!NETLOG) return;
+  if (!netLogEl) {
+    netLogEl = document.createElement('div'); netLogEl.id = 'netLog';
+    netLogEl.innerHTML = '<button type="button">Copy log</button><pre></pre>';
+    netLogEl.querySelector('button').onclick = () => { const t = netLines.join('\n'); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => notice('Log copied', 1200), () => prompt('Copy the log', t)); };
+    document.body.appendChild(netLogEl);
+  }
+  const pre = netLogEl.querySelector('pre'); pre.textContent = netLines.slice(-30).join('\n'); pre.scrollTop = 1e9;
+}
+if (NETLOG) {
+  addEventListener('error', e => netLog('page error:', e.message, `${(e.filename || '').split('/').pop()}:${e.lineno}`));
+  addEventListener('unhandledrejection', e => netLog('unhandled rejection:', e.reason));
+  netLog('log on ·', navigator.userAgent.replace(/^Mozilla\/5\.0 /, ''), '· secure', isSecureContext, '· RTCPeerConnection', typeof RTCPeerConnection);
+}
+document.addEventListener('visibilitychange', () => { if (NET.role) netLog('page', document.hidden ? 'hidden (the phone may drop the link while it sleeps)' : 'visible'); });
+// how a connection's under-the-hood WebRTC link is getting on: the ICE candidates found (host = this
+// network, srflx = your public address via STUN, relay = a TURN server), each state change, and once
+// it's up, which kind of route it ended up on
+function watchPC(c, tag, tries = 0) {
+  const pc = c.peerConnection;
+  if (!pc) { if (tries < 40) setTimeout(() => watchPC(c, tag, tries + 1), 50); else netLog(tag, 'no peer connection to watch'); return; }
+  const kinds = {};
+  pc.addEventListener('icecandidate', e => {
+    if (e.candidate && e.candidate.candidate) { const m = / typ (\w+)/.exec(e.candidate.candidate), k = (m ? m[1] : '?') + '/' + (e.candidate.protocol || '?'); kinds[k] = (kinds[k] || 0) + 1; }
+    else netLog(tag, 'candidates gathered:', Object.keys(kinds).length ? Object.entries(kinds).map(([k, n]) => `${k}×${n}`).join(' ') : 'none (no network route at all)');
+  });
+  pc.addEventListener('icegatheringstatechange', () => netLog(tag, 'gathering', pc.iceGatheringState));
+  pc.addEventListener('signalingstatechange', () => netLog(tag, 'signaling', pc.signalingState));
+  pc.addEventListener('iceconnectionstatechange', () => {
+    const st = pc.iceConnectionState;
+    netLog(tag, 'ice', st);
+    if (st === 'failed') netLog(tag, 'ICE failed: the phones found no route to each other. One network (often mobile data, or school/work Wi-Fi) blocks direct links; this needs a TURN relay.');
+    if (st === 'connected' || st === 'completed') pc.getStats().then(rep => {
+      let pair = null; const by = new Map(); rep.forEach(r => { by.set(r.id, r); if (r.type === 'transport' && r.selectedCandidatePairId) pair = r.selectedCandidatePairId; });
+      if (!pair) rep.forEach(r => { if (r.type === 'candidate-pair' && (r.selected || r.nominated) && r.state === 'succeeded') pair = r.id; });
+      const p = by.get(pair); if (!p) return;
+      const L = by.get(p.localCandidateId), R = by.get(p.remoteCandidateId);
+      netLog(tag, 'route:', L ? L.candidateType : '?', '→', R ? R.candidateType : '?', L ? L.protocol : '', p.currentRoundTripTime != null ? `rtt ${Math.round(p.currentRoundTripTime * 1000)} ms` : '');
+    }).catch(e => netLog(tag, 'stats failed', e));
+  });
+  pc.addEventListener('connectionstatechange', () => netLog(tag, 'connection', pc.connectionState));
+}
+function watchConn(c, tag) {
+  netLog(tag, 'channel', c.label, c.reliable ? 'reliable' : 'unreliable', c.serialization, 'peer', c.peer);
+  c.on('open', () => netLog(tag, 'open'));
+  c.on('close', () => netLog(tag, 'closed'));
+  c.on('error', e => netLog(tag, 'error', e));
+  watchPC(c, tag);
+}
+function watchPeer(peer, who) {
+  peer.on('open', id => netLog(who, 'signalling server: connected as', id));
+  peer.on('disconnected', () => netLog(who, 'signalling server: disconnected (rooms already open keep working; new joins can’t get through)'));
+  peer.on('close', () => netLog(who, 'peer destroyed'));
+  peer.on('error', e => netLog(who, 'peer error', e));
+}
+// ---- the link: PeerJS, or the test harness's stand-in ----
+// a link has send(obj) (reliable), fast(buf) (unreliable), and on.rel / on.fast / on.close handlers
 const NETX = window.__NET_TEST || {
   load() {
     if (window.Peer) return Promise.resolve();
-    return new Promise((ok, no) => { const s = document.createElement('script'); s.src = PEERJS_URL; s.onload = ok; s.onerror = () => no(new Error("Couldn't load the connection library")); document.head.appendChild(s); });
+    netLog('loading PeerJS from', PEERJS_URL);
+    const t0 = performance.now();
+    return new Promise((ok, no) => {
+      const s = document.createElement('script'); s.src = PEERJS_URL;
+      s.onload = () => { netLog('PeerJS loaded in', Math.round(performance.now() - t0), 'ms', window.Peer ? '' : '(but Peer is missing!)'); ok(); };
+      s.onerror = () => { netLog('PeerJS failed to load: blocked, offline, or unpkg is down'); no(new Error("Couldn't load the connection library")); };
+      document.head.appendChild(s);
+    });
   },
   wrap(rel, fast) {
-    const L = { on: {}, send: o => { try { rel.open && rel.send(o); } catch (_) {} }, fast: buf => { try { fast.open && fast.send(buf); } catch (_) {} }, close: () => { try { rel.close(); fast.close(); } catch (_) {} } };
+    const L = { on: {}, send: o => { try { rel.open && rel.send(o); } catch (e) { netLog('send failed', e); } }, fast: buf => { try { fast.open && fast.send(buf); } catch (_) {} }, close: () => { try { rel.close(); fast.close(); } catch (_) {} } };
     // anything that arrives before the game has its handlers in waits for them (the join's hello can)
     L.held = []; L.flush = () => { const h = L.held; L.held = null; for (const d of h) L.on.rel?.(d); };
     rel.on('data', d => L.held ? L.held.push(d) : L.on.rel?.(d)); fast.on('data', d => L.on.fast?.(d instanceof ArrayBuffer ? d : d.buffer ? d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength) : d));
@@ -5826,27 +5913,44 @@ const NETX = window.__NET_TEST || {
   // host on room `code`: onJoin(link, meta) for each phone that joins
   host(code, onJoin) {
     return this.load().then(() => new Promise((ok, no) => {
-      const peer = new Peer('poolio-' + code), half = new Map();
+      netLog('host: opening room', code, 'as peer id', 'poolio-' + code);
+      // (window.__PEER_OPTS points a test at its own signalling server)
+      const peer = new Peer('poolio-' + code, { debug: NETLOG ? 2 : 1, ...window.__PEER_OPTS }), half = new Map();
+      watchPeer(peer, 'host:');
       peer.on('open', () => ok({ close: () => peer.destroy() }));
       peer.on('error', e => no(e));
       peer.on('connection', c => {
-        const cid = c.metadata?.cid; if (!cid) return;
+        const cid = c.metadata?.cid;
+        netLog('host: incoming', c.label, 'from', c.peer, 'cid', cid || '(none)', c.metadata?.name ? `name ${c.metadata.name}` : '');
+        if (!cid) { netLog('host: ignored, no cid'); return; }
+        watchConn(c, `host←${cid.slice(0, 4)} ${c.label}:`);
         c.on('open', () => {
           const h = half.get(cid) || {}; h[c.label] = c; half.set(cid, h);
-          if (h.rel && h.fast) { half.delete(cid); onJoin(this.wrap(h.rel, h.fast), h.rel.metadata); }
+          netLog('host:', cid.slice(0, 4), 'has', Object.keys(h).join('+'));
+          if (h.rel && h.fast) { half.delete(cid); netLog('host: both channels open, letting', h.rel.metadata?.name || '?', 'in'); onJoin(this.wrap(h.rel, h.fast), h.rel.metadata); }
         });
       });
     }));
   },
   join(code, meta) {
     return this.load().then(() => new Promise((ok, no) => {
-      const peer = new Peer(), cid = Math.random().toString(36).slice(2);
-      peer.on('error', e => no(e));
+      const peer = new Peer({ debug: NETLOG ? 2 : 1, ...window.__PEER_OPTS }), cid = Math.random().toString(36).slice(2);
+      watchPeer(peer, 'join:');
+      let done = false;
+      peer.on('error', e => { if (!done) { done = true; no(e); } });
       peer.on('open', () => {
-        const id = 'poolio-' + code, rel = peer.connect(id, { label: 'rel', reliable: true, serialization: 'json', metadata: { ...meta, cid } }), fast = peer.connect(id, { label: 'fast', reliable: false, serialization: 'raw', metadata: { cid } });
-        let n = 0; const both = () => { if (++n === 2) ok(this.wrap(rel, fast)); };
+        const id = 'poolio-' + code;
+        netLog('join: calling room', code, '(peer id', id + ')', 'cid', cid.slice(0, 4));
+        const rel = peer.connect(id, { label: 'rel', reliable: true, serialization: 'json', metadata: { ...meta, cid } }), fast = peer.connect(id, { label: 'fast', reliable: false, serialization: 'raw', metadata: { cid } });
+        watchConn(rel, 'join→host rel:'); watchConn(fast, 'join→host fast:');
+        let n = 0; const both = () => { if (++n === 2 && !done) { done = true; netLog('join: both channels open'); ok(this.wrap(rel, fast)); } };
         rel.on('open', both); fast.on('open', both);
-        setTimeout(() => n < 2 && no(new Error('No game with that code')), 9000);
+        setTimeout(() => {
+          if (done) return; done = true;
+          const st = c => `${c.label} ${c.open ? 'open' : 'not open'}, ice ${c.peerConnection ? c.peerConnection.iceConnectionState : 'n/a'}`;
+          netLog('join: gave up after 12 s:', st(rel), '|', st(fast));
+          no(new Error(rel.peerConnection && rel.peerConnection.iceConnectionState === 'failed' ? 'Found the game but couldn’t reach it (a network is blocking the link)' : 'No answer from that room'));
+        }, 12000);
       });
     }));
   }
@@ -5866,16 +5970,18 @@ const tableMsg = () => ({ t: 'table', RT, pk: pockets.map(p => [Math.round(p.x),
 // ---------- hosting ----------
 function netHost(mode = 'arena') {
   const code = roomCode();
-  netStatus('Opening a room…');
+  netStatus('Opening a room…'); netLog('host: hosting', mode, 'room', code);
   NETX.host(code, netJoined).then(h => {
+    netLog('host: room', code, 'is open, waiting for friends');
     NET.role = 'host'; NET.code = code; NET.clients = []; NET.hostH = h; NET.sendTick = 0; NET.tableKey = ''; NET.psKey = '';
     closeSheets(); go(mode); syncRoomTag();
-  }).catch(e => netStatus(e && e.type === 'unavailable-id' ? 'That room is taken, try again' : `Couldn't open a room (${e && (e.type || e.message) || 'no connection'})`, true));
+  }).catch(e => { netLog('host: could not open the room:', e); netStatus(e && e.type === 'unavailable-id' ? 'That room is taken, try again' : `Couldn't open a room (${e && (e.type || e.message) || 'no connection'})`, true); });
 }
 function netJoined(link, meta) {
   const p = mkPlayer(String(meta?.name || 'Friend').slice(0, 14), false);
   p.skinId = meta?.skin || null; p.respawnT = 0.3;
-  const c = { link, p, hist: new Map(), ack: 0, inSeq: 0, aimBase: new Map(), heard: time };
+  const c = { link, p, hist: new Map(), ack: 0, inSeq: 0, aimBase: new Map(), heard: time, got: new Set() };
+  netLog('host:', p.name, 'joined as player', p.nid, '· skin', p.skinId || 'default', '· mode', MODE);
   p.remote = { send: o => link.send(o) };
   NET.clients.push(c);
   link.send({ t: 'hi', you: p.nid, mode: MODE });
@@ -5889,13 +5995,15 @@ function netJoined(link, meta) {
   notice(`${p.name} joined`, 1800); netNote(`${p.name} joined`);
   syncRoomTag();
 }
-function netDrop(c) {
+function netDrop(c, why = 'link closed') {
   const i = NET.clients.indexOf(c); if (i < 0) return;
+  netLog('host: dropping', c.p.name, '·', why, '· last heard', (time - c.heard).toFixed(1), 's ago');
   NET.clients.splice(i, 1); dropPlayer(c.p); c.link.close(); partyLeft(c.p);
   notice(`${c.p.name} left`, 1800); netNote(`${c.p.name} left`); syncRoomTag();
 }
 function netHostRel(c, d) {
   c.heard = time;
+  if (!c.got.has(d.t)) { c.got.add(d.t); netLog('host: first', d.t, 'from', c.p.name); }
   if (d.t === 'shot') {
     const p = c.p; if (!p.alive) return;
     const a = clamp(+d.a || 0, -Math.PI, Math.PI), pow = clamp(+d.p || 0, 0.05, 1);
@@ -5906,6 +6014,7 @@ function netHostRel(c, d) {
 // input from a phone: [T_IN][seq][ack][aim-base seq][flags][angle, power: deltas or absolute]
 function netHostFast(c, buf) {
   c.heard = time;
+  if (!c.got.has('fast')) { c.got.add('fast'); netLog('host: first input packet from', c.p.name, '(fast channel works both ways)'); }
   const r = new BR(buf); if (r.u8() !== T_IN) return;
   const seq = r.vi(), ack = r.vi(), base = r.vi(), fl = r.u8();
   if (seq <= c.inSeq) return;                         // late or repeated: a newer one's already in
@@ -5920,7 +6029,7 @@ function netHostFast(c, buf) {
 }
 // every other tick: each phone gets the world as a delta against the last snapshot it acked
 function netHostStep() {
-  for (const c of NET.clients.slice()) if (time - c.heard > NET_DROP) netDrop(c);
+  for (const c of NET.clients.slice()) if (time - c.heard > NET_DROP) netDrop(c, `silent for ${NET_DROP} s`);
   if (!NET.clients.length || tickN - NET.sendTick < NET_SEND) return;
   NET.sendTick = tickN;
   const now = new Map();
@@ -6026,9 +6135,11 @@ function syncRoomTag() {
 function netJoin() {
   const code = $('netCode').value.trim().toUpperCase();
   if (code.length !== 4) { netStatus('Room codes are four letters', true); return; }
-  netStatus('Joining…');
+  netStatus('Joining…'); netLog('join: joining room', code, 'as', nick.value.trim() || 'Friend');
   me.name = nick.value.trim().slice(0, 14) || 'Friend'; store.set('nick', nick.value.trim().slice(0, 14));
   NETX.join(code, { name: me.name, skin: mySkin }).then(link => {
+    netLog('join: in. waiting for the host’s hello');
+    NET.got = new Set(); NET.misses = 0;
     NET.role = 'client'; NET.code = code; NET.link = link; NET.snaps = []; NET.hist = new Map(); NET.latest = 0; NET.seq = 0; NET.sentAims = new Map(); NET.inAck = 0;
     NET.balls = new Map(); NET.pmap = new Map(); NET.heard = time; NET.sendT = 0; NET.you = 0;
     link.on.rel = netClientRel; link.on.fast = netClientFast; link.on.close = () => netLost('The host left');
@@ -6039,15 +6150,17 @@ function netJoin() {
     closeSheets(); $('start').hidden = true; document.body.classList.remove('menu');
     started = true; MODE = 'arena'; wakeAudio(); me.alive = false; me.ball = null; me.respawnT = 99; syncRoomTag();
     link.flush?.();
-  }).catch(e => netStatus(e && e.type === 'peer-unavailable' ? 'No game with that code' : (e && e.message) || "Couldn't connect", true));
+  }).catch(e => { netLog('join: failed:', e); netStatus(e && e.type === 'peer-unavailable' ? 'No game with that code' : (e && e.message) || "Couldn't connect", true); });
 }
 function netLost(why) {
   if (NET.role !== 'client' || NET.gone) return;
+  netLog('join: lost the host:', why, '· last heard', (time - NET.heard).toFixed(1), 's ago');
   NET.gone = true; notice(`${why}. Back to the menu…`, 2500);
   setTimeout(() => location.reload(), 2600);
 }
 function netClientRel(d) {
   NET.heard = time;
+  if (!NET.got.has(d.t)) { NET.got.add(d.t); netLog('join: first', d.t, 'from the host', d.t === 'hi' ? `(player ${d.you}, mode ${d.mode})` : d.t === 'table' ? `(${d.pk.length} holes, ${d.sg.length} cushions)` : ''); }
   switch (d.t) {
     case 'hi': NET.you = d.you; NET.plKey = ''; MODE = d.mode === 'party' ? 'party' : 'arena'; party.phase = 'off'; break;
     case 'table': {
@@ -6109,9 +6222,10 @@ function netClientFast(buf) {
   NET.heard = time;
   const r = new BR(buf); if (r.u8() !== T_SNAP) return;
   const tick = r.vi(), baseT = r.vi(), inAck = r.vi(), n = r.vi();
+  if (!NET.got.has('snap')) { NET.got.add('snap'); netLog('join: first snapshot,', buf.byteLength, 'bytes,', n, 'balls (fast channel works)'); }
   if (tick <= NET.latest) return;
   const base = baseT ? NET.hist.get(baseT) : null;
-  if (baseT && !base) return;
+  if (baseT && !base) { if (++NET.misses % 30 === 1) netLog('join: snapshot against a baseline we never got, dropped (' + NET.misses + ' so far)'); return; }
   const snap = base ? new Map(base) : new Map();
   for (let i = 0; i < n; i++) {
     const id = r.vi(), fl = r.u8();
@@ -6132,7 +6246,7 @@ function netClientFast(buf) {
 }
 // each frame: draw the world a few ticks behind the newest snapshot, in between the two around it
 function netClientStep(dt) {
-  if (time - NET.heard > NET_STALL && !NET.gone) { if (!NET.stallShown) { NET.stallShown = true; notice('Lost the host…', 2000); } if (time - NET.heard > NET_DROP) netLost('Lost the host'); }
+  if (time - NET.heard > NET_STALL && !NET.gone) { if (!NET.stallShown) { NET.stallShown = true; notice('Lost the host…', 2000); netLog('join: nothing from the host for', NET_STALL, 's'); } if (time - NET.heard > NET_DROP) netLost('Lost the host'); }
   else NET.stallShown = false;
   netSendInput(dt);
   const S = NET.snaps; if (!S.length) return;
@@ -6344,7 +6458,7 @@ $('resume').addEventListener('click', () => { $('start').hidden = true; document
 $('leave').addEventListener('click', () => location.reload());
 $('helpBtn').addEventListener('click', () => {
   const s = $('start');
-  if (s.hidden) { s.hidden = false; s.classList.remove('leaving'); document.body.classList.add('menu'); for (const id of ['modes', 'play']) $(id).hidden = started; document.querySelector('.pick').hidden = started; $('resumeRow').hidden = !started; }
+  if (s.hidden) { s.hidden = false; s.classList.remove('leaving'); document.body.classList.add('menu'); for (const id of ['modes', 'play', 'netBtn']) $(id).hidden = started; document.querySelector('.pick').hidden = started; $('resumeRow').hidden = !started; }
 });
 
 const shiftB = [], shiftX = new Float64Array(600), shiftY = new Float64Array(600);
@@ -6377,5 +6491,5 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) last
 requestAnimationFrame(frame);
 })();
 </script>
-
-</body></html>
+</body>
+</html>
