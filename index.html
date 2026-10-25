@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Pool.io</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2764,6 +2765,26 @@ void main(){
     highp vec3 g = p * 16.0, id = floor(g), o = hash33(id) * 0.6 + 0.2;
     float h = hash13(id + 7.0), d = length(fract(g) - o);
     c = mix(base, vec3(1.0), step(0.6, h) * (1.0 - smoothstep(0.06, 0.16, d)) * (0.65 + 0.35 * h));
+  } else if (style == 29) {        // bucky: a sleepy orange critter, big eyes out to the sides half shut under heavy lids, two square buck teeth
+    // drawn flat on the face around +x: f is (right, down) across it
+    vec2 f = vec2(p.z, p.y) / 1.35; float front = step(0.0, p.x), w = 0.011;
+    vec3 INK = vec3(0.07, 0.05, 0.04), LID = base * 0.8;
+    for (int i = 0; i < 2; i++) {
+      float s = i == 0 ? -1.0 : 1.0;
+      vec2 e = f - vec2(0.4 * s, -0.08);
+      float inside = 1.0 - smoothstep(0.2, 0.2 + w, length(e * vec2(1.0, 1.06)));
+      float lidY = 0.0 + 0.09 * e.x * s;                            // the lid droops to the outside corner
+      vec3 eye = mix(WHITE, INK, 1.0 - smoothstep(0.09, 0.09 + w, length(e - vec2(0.0, 0.07))));
+      eye = mix(LID, eye, smoothstep(lidY - w * 0.5, lidY + w * 0.5, e.y));
+      c = mix(c, eye, inside * front);
+    }
+    // two square teeth, a sliver of orange between them
+    float t = 9.0;
+    for (int i = 0; i < 2; i++) {
+      vec2 bq = abs(f - vec2(0.058 * (i == 0 ? -1.0 : 1.0), 0.27)) - vec2(0.044, 0.05);
+      t = min(t, length(max(bq, 0.0)) + min(max(bq.x, bq.y), 0.0) - 0.006);
+    }
+    c = mix(c, WHITE, (1.0 - smoothstep(0.0, w, t)) * front);
   } else if (style == 10) {        // frost: pale ice with white facets (the Frost special, and the Ice skin)
     float e = shards(p * 3.2);
     c = mix(base, vec3(1.0), (1.0 - smoothstep(0.02, 0.07, e)) * 0.75);
@@ -5672,7 +5693,7 @@ const tutorial = (() => {
 
 // ---------- skins and settings ----------
 // Skins: your cue ball's look, in game and everywhere else: the classic spots in six colours, then
-// ten with a pattern of their own (style is the shader's pattern; col its colour).
+// eleven with a pattern of their own (style is the shader's pattern; col its colour).
 // Settings: sound, vibration, the 3D camera. Both live in their own sheet off the title screen and
 // are remembered on this device.
 const SKINS = [
@@ -5681,11 +5702,14 @@ const SKINS = [
   { id: 'racer', name: 'Racer', col: '#e23b3b', style: 21 }, { id: 'duo', name: 'Duo', col: '#3b6fd8', style: 22 },
   { id: 'felt', name: 'Felt', col: '#1f8a5b', style: 20 }, { id: 'marble', name: 'Marble', col: '#8a5cd6', style: 23 },
   { id: 'neon', name: 'Neon', col: '#38e1ff', style: 24 }, { id: 'magma', name: 'Magma', col: '#ff7a1a', style: 25 },
-  { id: 'eye', name: 'Eye', col: '#3fa34d', style: 26 }, { id: 'gold', name: 'Gold', col: '#e8b021', style: 27 },
-  { id: 'ice', name: 'Ice', col: '#bfe4f5', style: 10 }, { id: 'night', name: 'Night', col: '#1b2a5c', style: 28 }
+  { id: 'eye', name: 'Eye', col: '#3fa34d', style: 26, face: true }, { id: 'gold', name: 'Gold', col: '#e8b021', style: 27 },
+  { id: 'ice', name: 'Ice', col: '#bfe4f5', style: 10 }, { id: 'night', name: 'Night', col: '#1b2a5c', style: 28 },
+  { id: 'bucky', name: 'Bucky', col: '#ff9a3c', style: 29, face: true }
 ];
 { const k = store.get('skin'); if (k && SKINS.some(x => x.id === k)) mySkin = k; }
-const skinBall = s => uiBall({ kind: 'cue', skin: s, isOn: () => !!s && mySkin === s.id });
+// a skin with a face (it looks out along the ball's own x) starts turned to look at you
+const FACE_ON = [0, Math.SQRT1_2, 0, Math.SQRT1_2];
+const skinBall = s => uiBall({ kind: 'cue', skin: s, isOn: () => !!s && mySkin === s.id, ...(!s || s.face ? { q: FACE_ON.slice() } : {}) });
 const SKIN_COLS = 4;                     // the picker's grid: four across
 // the little ball next to your name: your ball, as it will look
 const youBall = ballCanvas($('youBall'), [skinBall(null)], (b, i, w, h) => { b.x = w / 2; b.y = h / 2; b.r = Math.min(w, h) * 0.4 * (1 + 0.1 * b.lift); }, () => openSheet('skinSheet'));
@@ -6353,3 +6377,5 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) last
 requestAnimationFrame(frame);
 })();
 </script>
+
+</body></html>
