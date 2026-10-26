@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!doctype html>
 <html lang="en">
 <head>
@@ -59,16 +60,20 @@ html,body{height:100%;overflow:hidden;background:#020507;color:var(--text);font-
 button{-webkit-tap-highlight-color:transparent}
 
 /* ---------- outlined type ---------- */
-.ol-l,.logo,.sheet h2,.pcard h2,.death h2{-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:var(--ol-l)}
-.ol-m,.modes button,.skinName,.pcard .cd{-webkit-text-stroke:2px #000;paint-order:stroke fill;text-shadow:var(--ol-m)}
-.ol-s,#score,.btn.alt,#rbTime{-webkit-text-stroke:1.5px #000;paint-order:stroke fill;text-shadow:var(--ol-s)}
+.ol-l,.logo,.sheet h2,.pcard h2,.death h2,#lvlUp b{-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:var(--ol-l)}
+.ol-m,.modes button,.skinName,.pcard .cd,.death .dcd b{-webkit-text-stroke:2px #000;paint-order:stroke fill;text-shadow:var(--ol-m)}
+.ol-s,#score,.btn.alt,#rbTime,.lvl span{-webkit-text-stroke:1.5px #000;paint-order:stroke fill;text-shadow:var(--ol-s)}
+/* the same step for small numbers and codes, on a thinner stroke */
+.ch .cx,.step b,#roomTag b{-webkit-text-stroke:1.2px #000;paint-order:stroke fill;text-shadow:var(--ol-s)}
 
 /* ---------- the table ---------- */
-#game,#balls,#fx{position:fixed;inset:0;display:block}
-#game,#balls{pointer-events:none}
+#game,#marks,#balls,#fx{position:fixed;inset:0;display:block}
+#game,#marks,#balls{pointer-events:none}
+/* the felt is a still picture a little bigger than the screen, slid under it (see feltLayer) */
+#game{inset:auto;left:0;top:0;will-change:transform}
 #fx{touch-action:none}
 body.aim #fx{cursor:none}
-#sky{position:fixed;inset:0;pointer-events:none;background:#93c9ee}
+
 
 /* ---------- HUD: plain text in the corners ---------- */
 .hud{position:fixed;z-index:var(--z-hud);pointer-events:none;text-shadow:var(--halo);transition:opacity .25s}
@@ -76,9 +81,10 @@ body.menu .hud{opacity:0;transition:opacity .2s}
 .tl{top:calc(8px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));display:flex;align-items:center;gap:6px}
 .tr{top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));width:152px}
 .br{bottom:calc(10px + env(safe-area-inset-bottom,0px));right:calc(10px + env(safe-area-inset-right,0px));width:104px;height:104px;background:rgba(6,24,30,.5);border-radius:var(--r)}
-#score{font:400 20px var(--f-title);font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:.3em;transform-origin:0 55%;will-change:transform}
+#score{font:400 20px var(--f-title);font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:.3em;transform-origin:30% 55%}
 /* the points token: a gold rounded square on its corner with a hole through it, outlined like the number */
 #score .tok{width:1.2em;height:1.2em;flex:none;overflow:visible;filter:drop-shadow(1.5px 1.5px 0 #000)}
+#score{margin-left:6px}
 #scoreCap{top:calc(38px + env(safe-area-inset-top,0px));left:calc(11px + env(safe-area-inset-left,0px));font:700 13px var(--f-ui);color:var(--gold);letter-spacing:.02em;opacity:0;white-space:nowrap}
 #notice{top:calc(150px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font:700 14px/1.35 var(--f-ui);color:var(--soft);letter-spacing:.03em;opacity:0;width:max-content;max-width:calc(100vw - 32px);text-align:center;transition:opacity .25s;background:rgba(6,24,30,.62);padding:6px 12px;border-radius:var(--r);text-shadow:none}
 /* the party round: a panel bottom-left, mirroring the minimap, in the leaderboard's style: the game and
@@ -91,7 +97,7 @@ body.menu .hud{opacity:0;transition:opacity .2s}
 #rbTime{font:400 26px/1.1 var(--f-title);color:var(--text);margin:1px 0 1px}
 #rbTime.low{color:var(--danger)}
 #roundBar b{font-weight:700}
-#board{list-style:none;margin:0;padding:6px 8px;background:rgba(6,24,30,.5);border-radius:var(--r);font-size:13px;font-weight:600;line-height:1.45;font-variant-numeric:tabular-nums;color:var(--muted)}
+#board{list-style:none;margin:0;padding:6px 8px;background:rgba(6,24,30,.5);border-radius:var(--r);font-size:13px;font-weight:600;line-height:1.45;font-variant-numeric:tabular-nums;color:var(--muted);text-shadow:none}
 #board li{display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
 #board li span:first-child{overflow:hidden;text-overflow:ellipsis}
 #board .crown{width:13px;height:9px;margin-right:4px;vertical-align:-0.5px}
@@ -140,7 +146,7 @@ body.partyup .hud{opacity:0}
 .menu{position:relative;width:100%;max-width:360px;height:100%;padding:clamp(28px,11vh,110px) 0 clamp(16px,4vh,36px);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center}
 .menu>#play,.menu>#resumeRow{align-self:stretch}
 .overlay.start.leaving .menu>*:not(.pick){opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
-.logo{font:400 58px/.9 var(--f-title);margin:0;letter-spacing:-.01em;white-space:nowrap}
+.logo{font:400 58px/.9 var(--f-title);margin:0;letter-spacing:-.01em;white-space:nowrap;width:max-content;margin-inline:auto;cursor:default;-webkit-tap-highlight-color:transparent}
 .logo .ob{display:inline-block;width:.47em;height:.47em;border-radius:50%;margin:0 .02em 0 .03em;vertical-align:.01em;position:relative;background:radial-gradient(circle at 34% 30%,#fff 0 12%,var(--ivory) 40%,#cbbfa4 100%);box-shadow:0 0 0 1.5px #000,1px 1px 0 1.5px #000,2px 2px 0 1.5px #000,3px 3px 0 1.5px #000,4px 4px 0 1.5px #000}
 .logo .ob::after{content:"";position:absolute;width:24%;height:24%;border-radius:50%;background:var(--chalk);right:20%;bottom:22%}
 .logo .dot{color:#9fb3b8;font-size:.5em;margin-left:.03em}
@@ -173,11 +179,18 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 /* your level: a chunky badge, its ring filling gold toward the next one; a dot when a challenge is done */
 .lvl{flex:none;order:3;position:relative;width:44px;height:44px;padding:0;border:0;border-radius:50%;cursor:pointer;background:conic-gradient(var(--gold) calc(var(--p,0) * 1%),rgba(255,255,255,.16) 0);display:grid;place-items:center}
 .lvl::before{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--ink)}
-.lvl span{position:relative;font:400 18px/1 var(--f-title);color:var(--text);-webkit-text-stroke:1.5px #000;paint-order:stroke fill;text-shadow:var(--ol-s);font-variant-numeric:tabular-nums}
+.lvl span{position:relative;font:400 18px/1 var(--f-title);color:var(--text);font-variant-numeric:tabular-nums}
 .lvl .dot{position:absolute;top:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 2px var(--ink)}
 .lvl:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
-.xpbar{width:100%;height:14px;border-radius:7px;background:rgba(255,255,255,.14);overflow:hidden;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35)}
-.xpbar i{display:block;height:100%;width:0;background:linear-gradient(180deg,#ffe873,var(--gold) 55%,#f0a20c);border-radius:7px;transition:width .5s var(--spring)}
+/* your level while you play: the menu's badge, smaller, before your points; the ring fills with XP.
+   Over the live table it takes the HUD's black outline and hard step, and pops when you level up */
+.lvl.lvlh{order:0;width:30px;height:30px;cursor:default}
+.lvl.lvlh::before{inset:3px}
+.lvl.lvlh span{font-size:14px}
+.lvl.lvlh.pop{animation:lvlPop .7s var(--spring)}
+@keyframes lvlPop{0%{transform:scale(1)}35%{transform:scale(1.4)}100%{transform:scale(1)}}
+.xpbar{width:100%;height:14px;border-radius:4px;background:rgba(255,255,255,.14);overflow:hidden}
+.xpbar i{display:block;height:100%;width:0;background:var(--gold);border-radius:4px;transition:width .5s var(--spring)}
 .xpt{margin:8px 0 18px;font:700 14px var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
 .sheet .pk{margin:0 0 4px;align-self:flex-start;font:700 12px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
 .chl{width:100%;margin:0 0 26px;text-align:left}
@@ -188,11 +201,11 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 .ch .cp{display:block;margin-top:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
 .ch .cp i{display:block;height:100%;background:var(--chalk);border-radius:3px}
 .ch .cn{display:block;margin-top:4px;font:600 12px var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
-.ch .cx{flex:none;font:400 16px var(--f-title);color:var(--gold);-webkit-text-stroke:1.2px #000;paint-order:stroke fill;text-shadow:var(--ol-s)}
+.ch .cx{flex:none;font:400 16px var(--f-title);color:var(--gold)}
 .ch.done .ct{color:var(--muted)}.ch.done .cp i{background:var(--gold)}
 /* level up: big and gold over the table for a moment */
-#lvlUp{position:fixed;left:0;right:0;top:calc(215px + env(safe-area-inset-top,0px));z-index:calc(var(--z-card) + 1);pointer-events:none;text-align:center;animation:rise .4s var(--spring)}
-#lvlUp b{display:block;font:400 46px/1 var(--f-title);color:var(--gold);-webkit-text-stroke:3px #000;paint-order:stroke fill;text-shadow:var(--ol-l)}
+#lvlUp{position:fixed;left:0;right:0;top:calc(215px + env(safe-area-inset-top,0px));z-index:calc(var(--z-card) + 1);pointer-events:none;text-align:center}
+#lvlUp b{display:block;font:400 46px/1 var(--f-title);color:var(--gold)}
 #lvlUp span{display:block;margin-top:6px;font:700 15px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--text);text-shadow:var(--halo)}
 .netb{align-self:stretch;margin-top:10px}
 .netp{margin:0 0 22px;font:400 16px/1.4 var(--f-ui);color:var(--soft)}
@@ -210,8 +223,8 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 .step button{width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:var(--text);font:700 22px/1 var(--f-ui);cursor:pointer;display:grid;place-items:center;padding:0}
 .step button:disabled{opacity:.3;cursor:default}
 .step button:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
-.step b{min-width:2.2ch;text-align:center;font:400 24px var(--f-title);color:var(--text);-webkit-text-stroke:1.2px #000;paint-order:stroke fill}
-.pcard h2.code{font-size:56px;letter-spacing:.14em;color:var(--gold);-webkit-text-stroke:2px #000;paint-order:stroke fill;text-shadow:var(--ol-m)}
+.step b{min-width:2.2ch;text-align:center;font:400 24px var(--f-title);color:var(--text)}
+.pcard h2.code{font-size:56px;letter-spacing:.14em;color:var(--gold)}
 .pcard .lgames{font-size:13px;color:var(--muted)}
 .netst{min-height:1.4em;margin:16px 0 0;font:700 14px var(--f-ui);color:var(--muted)}
 .netst.bad{color:var(--danger)}
@@ -219,7 +232,7 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 #netLog pre{margin:0;align-self:stretch;overflow:hidden;background:rgba(0,0,0,.78);color:#a6f4a6;font:10.5px/1.3 ui-monospace,Menlo,monospace;padding:6px 8px;white-space:pre-wrap;word-break:break-all}
 #netLog button{pointer-events:auto;margin:0 6px 4px 0;font:700 12px var(--f-ui);background:#000;color:#a6f4a6;border:1px solid #a6f4a6;border-radius:6px;padding:5px 9px}
 #roomTag{top:calc(62px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));font:700 13px var(--f-ui);color:var(--soft);background:rgba(6,24,30,.5);border-radius:var(--r);padding:5px 10px;white-space:nowrap;text-shadow:none}
-#roomTag b{font:400 15px var(--f-title);letter-spacing:.12em;color:var(--gold);-webkit-text-stroke:1.2px #000;paint-order:stroke fill;text-shadow:var(--ol-s);margin-left:4px}
+#roomTag b{font:400 15px var(--f-title);letter-spacing:.12em;color:var(--gold);margin-left:4px}
 .youb{flex:none;width:48px;height:48px;padding:0;border:0;background:none;cursor:pointer;border-radius:50%}
 .youb:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
 .youb canvas{display:block;width:100%;height:100%}
@@ -257,6 +270,13 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 .skinName{margin:0 0 26px;font:400 20px var(--f-title);color:var(--text);letter-spacing:.02em}
 /* switch lists: settings and the party picker */
 .sets{display:flex;flex-direction:column;width:100%;margin:8px 0 30px}
+/* the party's games: the list scrolls in whatever room the sheet has, its title and buttons staying put,
+   fading out softly at whichever edge has more to come */
+#partyPicks{flex:0 1 auto;min-height:120px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:4px 0 20px;
+  --fa:0px;--fb:0px;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 var(--fa),#000 calc(100% - var(--fb)),transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 var(--fa),#000 calc(100% - var(--fb)),transparent 100%)}
+#partyPicks::-webkit-scrollbar{display:none}
+#partyPicks.fa{--fa:28px}#partyPicks.fb{--fb:28px}
+#partyPicks button{flex:none}
 .sets button{display:flex;align-items:center;justify-content:space-between;gap:12px;background:none;border:0;padding:14px 2px;color:var(--text);font:400 17px var(--f-ui);cursor:pointer;border-bottom:1px solid var(--line-2)}
 .sets button:last-child{border-bottom:0}
 .sets button span{text-align:left}
@@ -277,13 +297,46 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 #death.lit{background:none}
 .death h2{font:400 30px/1.05 var(--f-title);margin:0;letter-spacing:-.01em}
 .death p{margin:10px 0 0;color:var(--soft);font:400 15.5px/1.4 var(--f-ui)}
+.death p:empty{display:none}
+/* what you lost, in the points' own colour with the token in front, as everywhere else */
+.death .pts{color:var(--gold);font-weight:700;white-space:nowrap}
+.death .tok{width:1em;height:1em;vertical-align:-.15em;margin-right:.12em;overflow:visible;filter:drop-shadow(1px 1px 0 #000)}
+/* the countdown is the point of the card: the round intro's big number, under a gold caption, that
+   pops on each second */
+.death .dcd{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:22px}
+.death .dcd b{font:400 64px/1 var(--f-title);color:var(--text);font-variant-numeric:tabular-nums}
+.death .dcd b.tick{animation:cdTick .45s var(--spring)}
+@keyframes cdTick{0%{transform:scale(1.35)}100%{transform:none}}
 /* party screens (a round's intro, its result, the podium) sit on the same full-screen scrim as the
    menus, in the same type and with no box, and rise in on the spring */
 .overlay.pscreen{background:radial-gradient(ellipse 90% 70% at 50% 55%,rgba(4,13,17,.72) 0%,var(--scrim) 55%,rgba(4,13,17,.93) 100%);animation:fadeIn .2s ease-out}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+/* Every screen comes and goes the same way (uiShow / uiHide): in, it fades up and rises a little on
+   the spring; out, quicker, it fades and sinks a touch, and only then is hidden. A full-screen overlay
+   fades its scrim while what's on it rises or sinks. */
+.ui-in{animation:uiIn .28s var(--spring) both}
+.ui-out{animation:uiOut .15s ease-in both;pointer-events:none}
+.overlay.ui-in{animation:fadeIn .2s ease-out both}
+.overlay.ui-out{animation:uiFade .15s ease-in both}
+.overlay.ui-out>*{animation:uiOut .15s ease-in both}
+@keyframes uiIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes uiOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(6px)}}
+@keyframes uiFade{from{opacity:1}to{opacity:0}}
+/* the menu's views hold the corner buttons, which are pinned to the screen on a PC; a parent that moves
+   would carry them with it, so the view itself only fades, and what's in it rises */
+#startForm.ui-in,.sheet.ui-in{animation:fadeIn .2s ease-out both}
+#startForm.ui-out,.sheet.ui-out{animation:uiFade .15s ease-in both}
+#startForm.ui-in>:not(.qm),.sheet.ui-in>:not(.qm){animation:uiIn .28s var(--spring) both}
+/* reduce motion (the Settings switch, which starts out as the device's own setting): screens still
+   fade, since a fade isn't motion, but nothing slides, springs or pops */
+body.calm .ui-in{animation:fadeIn .2s ease-out both}
+body.calm .ui-out,body.calm .overlay.ui-out>*{animation:uiFade .15s ease-in both}
+body.calm #startForm.ui-in>*,body.calm .sheet.ui-in>*{animation:none}
+body.calm .death,body.calm .pcard{animation:fadeIn .2s ease-out}
+body.calm .death .dcd b.tick,body.calm .lvl.lvlh.pop{animation:none}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .pcard{width:100%;max-width:360px;max-height:100%;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;animation:rise .32s var(--spring)}
-.pcard .pk{margin:0;color:var(--gold);font:700 13px var(--f-ui);letter-spacing:.08em;text-transform:uppercase;text-shadow:var(--halo)}
+.pcard .pk,.death .pk{margin:0;color:var(--gold);font:700 13px var(--f-ui);letter-spacing:.08em;text-transform:uppercase;text-shadow:var(--halo)}
 .pcard h2{font:400 30px/1.05 var(--f-title);margin:0;letter-spacing:-.01em}
 .pcard p{margin:0;max-width:30ch;color:var(--soft);font:400 15.5px/1.4 var(--f-ui)}
 .pcard .cd{font:400 64px/1 var(--f-title);color:var(--text);margin-top:14px}
@@ -292,6 +345,9 @@ body.mb3d .bl::before,body.mb3d .bl::after{display:none}
 .pl li{display:flex;justify-content:space-between;padding:11px 2px;border-bottom:1px solid var(--line-2)}.pl li:last-child{border-bottom:0}.pl li.me{color:var(--chalk)}
 .pl .gain{color:var(--gold);font-weight:700;font-size:.82em;margin-right:12px}
 .pl .gain.z{color:var(--dim)}
+.pl .crown{width:16px;height:11px;margin-right:6px;vertical-align:-0.5px}
+#tabBoard .pcard{max-height:min(640px,100%)}
+#tabBoard .pl{overflow-y:auto;scrollbar-width:none}#tabBoard .pl::-webkit-scrollbar{display:none}
 .podium{width:100%;display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:14px 0 4px}
 .pd{width:31%;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:13px}
 .pd b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -307,16 +363,18 @@ body.pc #board{font-size:14px;padding:8px 10px}
 body.pc #roundBar{font-size:14px;padding:8px 12px 9px;min-width:136px}
 body.pc #rbTime{font-size:30px}
 body.pc #score{font-size:24px}
+body.pc .lvl.lvlh{width:36px;height:36px}body.pc .lvl.lvlh span{font-size:17px}
 body.pc .br{width:136px;height:136px}
 </style>
 </head>
 <body>
-<div id="sky" aria-hidden="true" hidden></div>
 <canvas id="game" aria-hidden="true"></canvas>
+<canvas id="marks" aria-hidden="true" hidden></canvas>
 <canvas id="balls" aria-hidden="true"></canvas>
 <canvas id="fx" aria-label="Pool.io table"></canvas>
 
 <div class="hud tl">
+  <div class="lvl lvlh" id="hudLvl" role="img" aria-label="Level 1"><span id="hudLvlN">1</span></div>
   <div id="score" aria-label="Points"><svg class="tok" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="tokG" x1="0" y1="1" x2="0" y2="0" gradientTransform="rotate(-45 .5 .5)"><stop offset="0" stop-color="#f08a0c"/><stop offset=".55" stop-color="#ffd21f"/><stop offset="1" stop-color="#ffe873"/></linearGradient></defs><path id="tokP" transform="rotate(45 12 12)" fill="url(#tokG)" stroke="#000" stroke-width="1.8" stroke-linejoin="round" paint-order="stroke" fill-rule="evenodd"
     d="M7.6 4.2H16.4A3.4 3.4 0 0 1 19.8 7.6V16.4A3.4 3.4 0 0 1 16.4 19.8H7.6A3.4 3.4 0 0 1 4.2 16.4V7.6A3.4 3.4 0 0 1 7.6 4.2ZM10.6 9.1H13.4A1.5 1.5 0 0 1 14.9 10.6V13.4A1.5 1.5 0 0 1 13.4 14.9H10.6A1.5 1.5 0 0 1 9.1 13.4V10.6A1.5 1.5 0 0 1 10.6 9.1Z"/></svg><span id="scoreN">0</span></div>
   <button id="helpBtn" type="button" aria-label="How to play">?</button>
@@ -335,6 +393,7 @@ body.pc .br{width:136px;height:136px}
   <div class="dg"><button data-a="ball" type="button">Ball</button><button data-a="gold" type="button">Gold</button><button data-a="magnet" type="button">Magnet</button><button data-a="bomb" type="button">Bomb</button><button data-a="frost" type="button">Frost</button><button data-a="midas" type="button">Midas</button><button data-a="breaker" type="button">Breaker</button><button data-a="bot" type="button">+ Bot</button><button data-a="bots" type="button">No bots</button><button data-a="hundred" type="button">+100</button><button data-a="clear" type="button">Clear</button><button data-a="score" type="button">+100 pts</button><button data-a="god" type="button" aria-pressed="false">No holes</button><button data-a="slow" type="button" aria-pressed="false">Slow-mo</button><button data-a="refill" type="button" aria-pressed="true">Refill</button></div>
 </div>
 <div id="partyCard" class="overlay pscreen" hidden><div class="pcard" id="partyBody"></div></div>
+<div id="tabBoard" class="overlay pscreen clear" hidden><div class="pcard"><p class="pk" id="tabKind"></p><h2>Leaderboard</h2><ol class="pl" id="tabList"></ol></div></div>
 
 <div id="start" class="overlay start">
   <form class="menu" id="startForm">
@@ -393,6 +452,7 @@ body.pc .br{width:136px;height:136px}
       <button type="button" role="switch" id="set-sound" aria-checked="true"><span>Sound</span><i></i></button>
       <button type="button" role="switch" id="set-buzz" aria-checked="true"><span>Vibration</span><i></i></button>
       <button type="button" role="switch" id="set-tilt" aria-checked="false"><span>3D camera</span><i></i></button>
+      <button type="button" role="switch" id="set-calm" aria-checked="false"><span>Reduce motion<small>Screens fade instead of sliding; no shake or squash</small></span><i></i></button>
     </div>
     <button class="btn play" id="setDone" type="button">Done</button>
   </div>
@@ -412,6 +472,7 @@ body.pc .br{width:136px;height:136px}
   <div class="death">
     <h2 id="deathTitle">Potted</h2>
     <p id="deathText"></p>
+    <div class="dcd" id="deathCd"><span class="pk">Back in</span><b id="deathCount">3</b></div>
   </div>
 </div>
 
@@ -427,10 +488,13 @@ const COL = {
 };
 // the UI spec's two typefaces, for text drawn on canvases
 const FONT = tok('--f-ui'), FONT_TITLE = tok('--f-title');
-const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// reduce motion: the device's setting to start with, then the Settings switch (applySettings keeps this up to date)
+const SYS_REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let REDUCE = SYS_REDUCE;
 const TAU = Math.PI * 2;
 
-const cv = document.getElementById('game'), ctx = cv.getContext('2d');
+const cv = document.getElementById('game'), ctx = cv.getContext('2d', { alpha: false });
+const mcv = document.getElementById('marks'), kctx = mcv.getContext('2d');
 const gc = document.getElementById('balls');
 const fxc = document.getElementById('fx'), fctx = fxc.getContext('2d');
 const mini = document.getElementById('mini'), mctx = mini.getContext('2d');
@@ -452,14 +516,23 @@ function qualityTick(ms) {
   else if (frameEma < 13 && qualT > 9000 && qual > 0) { qual--; qualT = 0; resize(); }
   else if (frameEma <= 25 && frameEma >= 13) qualT = Math.min(qualT, 1500);
 }
+// how far the felt picture reaches past the screen on every side (CSS px): it's only drawn again once
+// the view has slid that far
+const FELT_M = 160, SKY_COL = '#93c9ee';
+const felt = { key: '', tx: 0, ty: 0, dirty: true, css: '' };
 function resize() {
   labelCache.clear();
   DPR = Math.max(1, Math.min(window.devicePixelRatio || 1, MAX_DPR) * QUAL_STEPS[qual]);
   VW = innerWidth; VH = innerHeight;
-  for (const c of [cv, gc, fxc]) {
+  for (const c of [mcv, gc, fxc]) {
     c.width = Math.max(1, Math.round(VW * DPR)); c.height = Math.max(1, Math.round(VH * DPR));
     c.style.width = VW + 'px'; c.style.height = VH + 'px';
   }
+  // the felt: the screen plus FELT_M all round, at exactly one canvas pixel to a device pixel
+  const fm = Math.round(FELT_M * DPR);
+  cv.width = Math.max(1, Math.round(VW * DPR)) + 2 * fm; cv.height = Math.max(1, Math.round(VH * DPR)) + 2 * fm;
+  cv.style.width = cv.width / DPR + 'px'; cv.style.height = cv.height / DPR + 'px';
+  felt.dirty = true;
   ZOOM = Math.max(0.3, Math.min(Math.min(VW, VH) / 520, 1.15)) * zoomUser;
   ZOOM = Math.round(256 * DPR * ZOOM) / (256 * DPR);
   const ms = PC ? 136 : 104; mini.width = ms * DPR; mini.height = ms * DPR; MINI = ms;
@@ -521,6 +594,8 @@ const store = {
 const settings = { sound: true, buzz: true, tilt: store.get('tilt') === '1' };   // (tilt used to be saved on its own)
 try { Object.assign(settings, JSON.parse(store.get('set') || '{}')); } catch (_) {}
 const saveSet = () => store.set('set', JSON.stringify(settings));
+// (settings.calm is only there once you've flipped the switch; until then it follows the device)
+REDUCE = settings.calm ?? SYS_REDUCE;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 function segDist(px, py, s) {
   const dx = s.x2 - s.x1, dy = s.y2 - s.y1;
@@ -534,6 +609,8 @@ function randQuat() {
   const a = Math.sqrt(1 - u1), b = Math.sqrt(u1);
   return [a * Math.sin(u2), a * Math.cos(u2), b * Math.sin(u3), b * Math.cos(u3)];
 }
+// a hole: where, how big, and what it pays (base, plus any boost); a round adds its own marks (goal, finish)
+const mkHole = (x, y, r, o) => ({ x, y, r, drain: false, base: 1, boost: 0, flash: 0, ...o });
 function clearAt(x, y, r, pocketGap) {
   if (edgeDist(x, y) < SLOPE_W + r + 10) return false;
   for (const p of pockets) if (Math.hypot(p.x - x, p.y - y) < p.r + r + pocketGap) return false;
@@ -572,7 +649,7 @@ function genLevel() {
       x = TC + Math.cos(a) * d; y = TC + Math.sin(a) * d;
     } else ({ x, y } = inDisc(drain ? 520 : 190));
     if (pockets.some(p => Math.hypot(p.x - x, p.y - y) < 340)) continue;
-    pockets.push({ x, y, r: pr, drain, base: drain ? 2 : 1, boost: 0, flash: 0 });
+    pockets.push(mkHole(x, y, pr, { drain, base: drain ? 2 : 1 }));
   }
   for (const p of pockets) {
     if (Math.random() < 0.65) {
@@ -658,9 +735,9 @@ const speed = b => Math.hypot(b.vx, b.vy);
 const eligible = p => p.alive && !(MODE === 'party' && party.phase !== 'play') && p.cooldown <= 0 && !(p.ball.frozenT > time) && speed(p.ball) < 0.1 * maxPow(p);
 function shoot(p, dx, dy, pow) {
   const b = p.ball, s = clamp(pow, 0.05, 1) * maxPow(p);
-  if (MODE === 'party' && party.phase === 'play') curRound().shot?.(p);
   b.vx = qz(dx * s); b.vy = qz(dy * s); wake(b);
   p.cooldown = 0.5;
+  if (MODE === 'party' && party.phase === 'play') curRound()?.shot?.(p);   // (after: a round can change the reload)
   sfxCue(clamp(pow, 0, 1), b.x, b.y, p === me);
 }
 
@@ -674,7 +751,7 @@ function knock(cue, attacker) {
 }
 // sa / sb: each ball's speed toward the other just before impact. The faster one is the mover.
 function contact(a, b, imp, sa, sb) {
-  if (MODE === 'party' && party.phase === 'play') curRound().contact?.(a, b, imp);
+  if (MODE === 'party' && party.phase === 'play') curRound()?.contact?.(a, b, imp);
   if (imp >= 25) specialContact(a, b, imp);
   if (imp >= CHIP_MIN) { if (a.kind === 'loot' && b.kind === 'cue') chipLoot(a, b.owner); else if (b.kind === 'loot' && a.kind === 'cue') chipLoot(b, a.owner); }
   if (a.kind === 'breaker') { if (b.kind === 'cue') breakerHit(a, b.owner, imp); else breakerEat(a, b); }
@@ -709,23 +786,23 @@ function detonate(bomb) {
     if (isSpecial(o) && !o.used) queueAct(o, attacker);
     if (goldRain) gild(o);
   }
-  burst(bomb.x, bomb.y, 40, [80, 420], [0.4, 0.9], [2, 5], coin(COL.danger, COL.brass));
-  ringFx(bomb.x, bomb.y, 0.45, 20, BOMB_R, COL.danger);
-  if (inView(bomb.x, bomb.y, 200)) { shake = Math.max(shake, 0.7); sfxBoom(bomb.x, bomb.y, attacker === me || (me.alive && Math.hypot(me.ball.x - bomb.x, me.ball.y - bomb.y) < BOMB_R)); }
+  boomFx(bomb.x, bomb.y, attacker === me || (me.alive && Math.hypot(me.ball.x - bomb.x, me.ball.y - bomb.y) < BOMB_R));
+}
+// a bomb going off, as everyone sees it: a blast of sparks, a ring as far as it reaches, a shake and a boom
+function boomFx(x, y, own) {
+  fxAt(x, y, 40, COL.danger, COL.brass, 0.7);
+  ringFx(x, y, 0.45, 20, BOMB_R, COL.danger);
+  if (inView(x, y, 200)) sfxBoom(x, y, own);
 }
 
 
 // ---------- potting ----------
 function pot(b, p) {
   if (b.kind === 'cue' && p.finish && MODE === 'party' && party.phase === 'play') {
-    b.dead = true; p.flash = 1; if (inView(p.x, p.y, 60)) { sfxPot(p.x, p.y, mine(b)); sinker(b, { p }); }
+    b.dead = true; potFx(b, p, mine(b));
     raceFinish(b.owner); return;
   }
-  b.dead = true; p.flash = 1;
-  if (inView(p.x, p.y, 60)) {
-    sfxPot(p.x, p.y, mine(b));
-    sinker(b, { p });
-  }
+  b.dead = true; potFx(b, p, mine(b));
   if (b.kind === 'cue') { kill(b.owner, p.x, p.y, p); return; }
   if (b.kind === 'soccer') { soccerIn(b, p); return; }
   const t = recentToucher(b), owner = t && t.alive ? t : null;
@@ -734,18 +811,19 @@ function pot(b, p) {
     if (owner) {
       owner.score += b.value; owner.pots++; updMass(owner);
       gainFor(owner, b.value, p.x, p.y, `LOOT +${b.value}`, p); if (owner === me) ev('gold');
-      addFloat(p.x, p.y - p.r - 14, b.value, LOOT_COL, owner.isBot ? 15 : 20);
+      addFloat(p.x, p.y - p.r - 14, b.value, LOOT_COL, owner.isBot ? 15 : 20, 1, pockets.indexOf(p));
     } else spitLoot(b.value, p, null);
     return;
   }
   const val = b.kind === 'bomb' ? Math.max(0, b.count) : b.value;
   if (owner) {
-    const mult = MODE === 'party' ? (curRound().kind === 'hot' && party.phase === 'play' ? (p.hot ? 3 : 1) : 0) : p.base + p.boost, pts = val * mult;
+    // (in party, pots only pay during a Hot Hole round; between rounds and on the podium there's no round at all)
+    const mult = MODE === 'party' ? (party.phase === 'play' && curRound()?.kind === 'hot' ? (p.hot ? 3 : 1) : 0) : p.base + p.boost, pts = val * mult;
     if (!pts && MODE === 'party') return;
     owner.score += pts; owner.pots++; p.boost = 0;
     if (owner === me) { ev('pot'); if (MODE === 'party' && p.hot) ev('hot'); }
     gainFor(owner, pts, p.x, p.y, mult > 1 ? `×${mult} HOLE +${pts}` : '', p);
-    addFloat(p.x, p.y - p.r - 14, pts, mult > 1 ? COL.danger : COL.ivory, owner.isBot ? 14 : 18);
+    addFloat(p.x, p.y - p.r - 14, pts, null, owner.isBot ? 14 : 18, mult > 1 ? 2 : 0, pockets.indexOf(p));
     updMass(owner);
   }
 }
@@ -978,7 +1056,6 @@ function chipLoot(l, who) {
   l.value -= amt; who.score += amt; updMass(who);
   if (who === me) inFlight += amt;
   if (inView(l.x, l.y, 80) || who === me) worldChips.push({ x: l.x, y: l.y, who, amt, t: 0 });
-  else if (who === me) { inFlight -= amt; land(amt); }
   if (inView(l.x, l.y, 40)) addFloat(l.x, l.y - l.r - 30, `-${amt}`, LOOT_COL, 13);
 }
 function updateChips(dt) {
@@ -1068,7 +1145,7 @@ const eh = (e, i, k) => { const h = Math.sin(e.seed + i * 12.9898 + k * 78.233) 
 function drawWindup(g) {
   for (const q of pendingLoot) {
     if (!q.p || !inView(q.p.x, q.p.y, 80)) continue;
-    const p = q.p, u = clamp(1 - (q.at - time) / LOOT_DELAY, 0, 1), e = u * u;
+    const p = q.p, u = clamp(1 - (q.at - time) / LOOT_DELAY, 0, 1);
     g.fillStyle = '#ffd65a';
     for (let i = 0; i < 5; i++) {
       const hh = k => { const h1 = Math.sin(p.x * 0.37 + p.y * 0.11 + i * 2.17 + k * 5.3) * 4375.85; return h1 - Math.floor(h1); };
@@ -1182,7 +1259,7 @@ function kill(victim, x, y, p) {
   if (killer) {
     killer.score += toKiller; killer.kills++; updMass(killer);
     gainFor(killer, toKiller, x, y, `${edge ? 'KNOCKED OFF' : 'POTTED'} ${victim.name.toUpperCase()} +${toKiller}`, p);
-    if (!killer.isBot) { const f = edge ? toRim(x, y, 40) : { x, y: y - p.r - 34 }; addFloat(f.x, f.y, toKiller, COL.chalk, 20); }
+    if (!killer.isBot) { const f = edge ? toRim(x, y, 40) : { x, y: y - p.r - 34 }; addFloat(f.x, f.y, toKiller, null, 20, 1); }
   }
   downPlayer(victim); victim.respawnT = victim.isBot ? rnd(...BOT_RESPAWN) : ME_RESPAWN;
   if (victim === me) { deathPos = edge ? toRim(x, y, 0) : { x, y }; showDeath(killer, S, toKiller, edge); }
@@ -1191,6 +1268,14 @@ function kill(victim, x, y, p) {
 // the falling copy of a ball that went down, drawn until it's gone
 const sinker = (b, o) => sinkers.push({ kind: b.kind, value: b.value, count: b.count, owner: b.owner, r: b.r, r0: b.r, m: b.m, q: b.q.slice(),
   x: b.x, y: b.y, x0: b.x, y0: b.y, vx: b.vx, vy: b.vy, t: 0, fade: 1, ...o });
+// how a ball going down hole p looks and sounds (the host's game and a joining phone's alike)
+function potFx(b, p, own) { p.flash = 1; if (inView(p.x, p.y, 60)) { sfxPot(p.x, p.y, own); sinker(b, { p }); } }
+// ...and one going over the edge, outward along (ux, uy)
+function fallFx(b, ux, uy, own) {
+  if (!inView(b.x, b.y, 80)) return;
+  sinker(b, { fall: true, ux, uy, sp: Math.min(500, Math.hypot(b.vx, b.vy)), cx0: cam.x, cy0: cam.y });
+  sfxFall(b.x, b.y, own);
+}
 
 // ---------- falling off the edge ----------
 // A cue ball knocked off: whoever hit it last (within the kill window) takes all of its score.
@@ -1198,11 +1283,8 @@ const sinker = (b, o) => sinkers.push({ kind: b.kind, value: b.value, count: b.c
 function fallOff(b, nx, ny) {
   if (b.dead) return;
   b.dead = true;
-  if (inView(b.x, b.y, 80)) {
-    const s = Math.hypot(b.vx, b.vy) || 1, ux = nx || b.vx / s, uy = ny || b.vy / s;
-    sinker(b, { fall: true, ux, uy, sp: Math.min(500, s), cx0: cam.x, cy0: cam.y });
-    sfxFall(b.x, b.y, mine(b));
-  }
+  const s = Math.hypot(b.vx, b.vy) || 1;
+  fallFx(b, nx || b.vx / s, ny || b.vy / s, mine(b));
   if (b.kind === 'cue') kill(b.owner, b.x, b.y, null);
   else if (b.kind === 'breaker') breakerGone(b);
   else if (b.kind === 'soccer') soccerIn(b, null);
@@ -1729,18 +1811,10 @@ function routeTo(c, x, y) {
   }
   return best || { x, y, direct: true };
 }
+// nothing (no cushion, no ball but `skip`) between c and (gx, gy)
 function pathClear(c, gx, gy, skip) {
   const dx = gx - c.x, dy = gy - c.y, L = Math.hypot(dx, dy); if (L < 1) return true;
-  if (!wallClear(c.x, c.y, gx, gy, c.r)) return false;
-  const ux = dx / L, uy = dy / L, pd = c.r + MAX_R;
-  for (const o of ballsIn(Math.min(c.x, gx) - pd, Math.min(c.y, gy) - pd, Math.max(c.x, gx) + pd, Math.max(c.y, gy) + pd, nearB)) {
-    if (o === c || o === skip || o.dead) continue;
-    const fx = o.x - c.x, fy = o.y - c.y, t = fx * ux + fy * uy;
-    if (t < 0 || t > L) continue;
-    const px = fx - ux * t, py = fy - uy * t;
-    if (px * px + py * py < (o.r + c.r) ** 2) return false;
-  }
-  return true;
+  return wallClear(c.x, c.y, gx, gy, c.r) && !rayFirst(c, dx / L, dy / L, L, skip, true);
 }
 // a shot at angle a
 const aimDir = (a, pow) => ({ dx: Math.cos(a), dy: Math.sin(a), pow });
@@ -1810,14 +1884,15 @@ function foeOf(p, q) {
   return r.foe ? r.foe(p, q) : r.teams ? teamOf(p) !== teamOf(q) : true;
 }
 const friendOf = (p, q) => !!q && q !== p && !foeOf(p, q);
-// the first ball a ball at c would run into rolling L along (ux, uy), or null
-function rayFirst(c, ux, uy, L) {
+// the first ball a ball at c would run into rolling L along (ux, uy), or null (passing over `skip`);
+// with `any`, just whichever it finds first, which is all a yes/no question needs
+function rayFirst(c, ux, uy, L, skip = null, any = false) {
   const ex = c.x + ux * L, ey = c.y + uy * L, pd = c.r + MAX_R;
   let best = null, bt = Infinity;
   for (const o of ballsIn(Math.min(c.x, ex) - pd, Math.min(c.y, ey) - pd, Math.max(c.x, ex) + pd, Math.max(c.y, ey) + pd, nearB)) {
-    if (o === c || o.dead) continue;
+    if (o === c || o === skip || o.dead) continue;
     const fx = o.x - c.x, fy = o.y - c.y, t = fx * ux + fy * uy; if (t < 0 || t > L || t >= bt) continue;
-    const px = fx - ux * t, py = fy - uy * t; if (px * px + py * py < (o.r + c.r) ** 2) { bt = t; best = o; }
+    const px = fx - ux * t, py = fy - uy * t; if (px * px + py * py < (o.r + c.r) ** 2) { if (any) return o; bt = t; best = o; }
   }
   return best;
 }
@@ -1901,9 +1976,7 @@ function potOptions(p, out, mix) {
     const q = claimedBy(p, b), cl = !q ? 1 : q.windup && q.windup.ref === b ? 0 : q.ball && Math.hypot(q.ball.x - b.x, q.ball.y - b.y) > Math.hypot(c.x - b.x, c.y - b.y) * 2.5 ? 1 : 0.25;
     if (!cl) continue;
     // cue balls near the edge can be pushed off it for their whole score
-    const goals = fight ? pockets.concat(edgeTargets(b)) : pockets;
-    for (const pk of goals) {
-      if (pk.r <= b.r || pk.goal !== undefined || pk.finish) continue;
+    for (const pk of potHoles(b, fight)) {
       const lined = p.bot.setup && p.bot.setup.ref === b && p.bot.setup.until > time ? 2 : 1;
       if (lined === 1 && (pk.edge ? !seen(pk.x, pk.y, 60) : !seen(pk.x, pk.y, pk.r))) continue;
       const ex = pk.x - b.x, ey = pk.y - b.y, d2 = Math.hypot(ex, ey);
@@ -1912,7 +1985,7 @@ function potOptions(p, out, mix) {
       const gx = b.x - ux * (b.r + c.r), gy = b.y - uy * (b.r + c.r);
       const wx = gx - c.x, wy = gy - c.y, dl = Math.hypot(wx, wy); if (dl < 2) continue;
       const cos = (wx * ux + wy * uy) / dl; if (cos < 0.35) continue;
-      const val = b.kind === 'loot' ? tv : tv * (MODE === 'party' ? (pk.hot ? 3 : 1) : pk.base + pk.boost);
+      const val = potWorth(b, pk, tv);
       // speed the object ball needs to reach the pocket (or clear the edge), then the cue speed to deliver it
       const vt = pk.edge ? Math.hypot(speedFor(d2), SLOPE_V) * 1.2 + 60 : speedFor(d2) * 1.3 + 70;
       const vc = vt / (cos * (1 + BALL_E) * c.m / (c.m + b.m));
@@ -1968,16 +2041,14 @@ function setupOptions(p, out, mix) {
     const fight = b.kind === 'cue', want = fight ? mix.fights : mix.pots;
     if (want <= 0) continue;
     const tv = targetValue(p, b); if (tv <= 0) continue;
-    const goals = fight ? pockets.concat(edgeTargets(b)) : pockets;
-    for (const pk of goals) {
-      if (pk.r <= b.r || pk.goal !== undefined || pk.finish) continue;
+    for (const pk of potHoles(b, fight)) {
       const ex = pk.x - b.x, ey = pk.y - b.y, d2 = Math.hypot(ex, ey);
       if (d2 > 420 || d2 < 1) continue;
       const ux = ex / d2, uy = ey / d2, off = b.r + c.r + rnd(...SETUP_OFF), sx = b.x - ux * off, sy = b.y - uy * off;
       const travel = Math.hypot(sx - c.x, sy - c.y);
       if (travel < 70 || edgeDist(sx, sy) < 150 || pockets.some(q => Math.hypot(q.x - sx, q.y - sy) < q.r + 60)) continue;
       if (claimedBy(p, b)) continue;
-      const val = b.kind === 'loot' ? tv : tv * (MODE === 'party' ? (pk.hot ? 3 : 1) : pk.base + pk.boost);
+      const val = potWorth(b, pk, tv);
       // worth less than a pot it could take now, and less again while it's still on one it lined up
       const busy = B.setup && B.setup.until > time && B.setup.ref !== b ? 0.4 : 1;
       found.push({ b, pk, sx, sy, travel, fight, u: 0.45 * busy * want * val / (1 + d2 / 320) / (1 + travel / 700) });
@@ -2035,7 +2106,12 @@ function modeOption(p) {
 // Like you reading the aim guide: before a shot that could go wrong, it plays the shot on a copy of the
 // balls around it and sees what happens. Only a few runs a frame for all the bots together.
 const SIM_PER_FRAME = 2, SIM_MS = 2.5;      // runs a frame, and milliseconds a frame
+const SIM_ONE_MS = 6;                       // the most one run may take (a packed crowd); past it, it's given up
 let simLeft = SIM_PER_FRAME, simSpent = 0;
+// the holes (and, for a cue ball, the edge) a bot could send b into; not a goal or the race's finish
+const potHoles = (b, fight) => (fight ? pockets.concat(edgeTargets(b)) : pockets).filter(pk => pk.r > b.r && pk.goal === undefined && !pk.finish);
+// what potting b in pk pays: the gold ball whatever the hole, anything else by the hole (triple in the hot hole)
+const potWorth = (b, pk, tv) => b.kind === 'loot' ? tv : tv * (MODE === 'party' ? (pk.hot ? 3 : 1) : pk.base + pk.boost);
 function cloneBox(cx, cy, hw, hh) {
   const out = [];
   for (const b of ballsIn(cx - hw, cy - hh, cx + hw, cy + hh, nearA)) {
@@ -2066,7 +2142,8 @@ function simShotRun(p, a, delay) {
   const wait = Math.round(delay / TICK), vx = qz(a.dx * v), vy = qz(a.dy * v);
   if (wait > 0) { mine.vx = mine.vy = 0; }
   else { mine.vx = vx; mine.vy = vy; mine.moved = true; }
-  const hit = runForward(cl, 105 + wait, mine, 40 + wait, wait > 0 ? { vx, vy, limit: Infinity, wait, until: wait + 1 } : null);
+  const hit = runForward(cl, 105 + wait, mine, 40 + wait, wait > 0 ? { vx, vy, limit: Infinity, wait, until: wait + 1 } : null, SIM_ONE_MS);
+  if (runForward.cut) return null;                   // too crowded to play through in time: as good as not checking
   const sank = [];
   for (const x of cl) if (x !== mine && (x.pocket || x.fell)) sank.push(x.ref);
   return { lost: !!(mine.pocket || mine.fell), home: !!(mine.pocket && mine.pocket.finish), sank, first: hit ? hit.other.ref : null };
@@ -2219,7 +2296,94 @@ function burst(x, y, n, sp, life, size, col) {
 // a ring that sweeps from r0 to r1 and fades
 const ringFx = (x, y, life, r0, r1, color) => particles.push({ ring: true, x, y, life, max: life, r0, r1, color });
 const either = (a, b) => i => i % 2 ? a : b, coin = (a, b) => () => Math.random() < 0.5 ? a : b;
-function addFloat(x, y, text, color, size) { floats.push({ x, y, text, color, size, life: 1.4, max: 1.4 }); if (NET.role === 'host') netAll({ t: 'fl', x: Math.round(x), y: Math.round(y), s: text, c: color, z: size }); }
+// Floating numbers, after the mining game's damage popups: a bold number that appears with the menu
+// balls' tap (tapKick: a stretch and squash that wobbles out on its spring, and a little bounce of
+// lift and size), rises with an ease-out-expo over the first half of its life, and is opaque for that
+// half and fades over the second. It's drawn upright on the screen even with the table tilted, with
+// a solid border and a drop shadow down and to the right in the tier's border colour.
+// A hole has at most one number at a time, showing only the latest pot (not a running total): another
+// pot there changes that number in place (new text, the tap again, the fade starts over) rather than
+// stacking a second one. `key` is the hole's index (-1 for numbers that aren't a hole's).
+// tier: 0 a pot, 1 a big one (a knockout, the gold ball), 2 a multiplied hole, orange and tapped hardest.
+const FLOAT_TIER = [
+  { max: 0.6, kick: 1, color: '#ffffff', border: '#141a47' },
+  { max: 0.6, kick: 1.15, color: '#ffffff', border: '#141a47' },
+  { max: 0.75, kick: 1.3, color: '#ff800d', border: '#000000' },
+];
+// The menu balls' tap, for anything: a kick into the same two springs a tapped ball has (its squash,
+// + flat and - tall, and its lift), stepped by tapSprings exactly as uiStep steps a ball's. TAP_GROW is
+// how much a ball grows with its lift in the menu, so lifted things grow the same.
+const TAP_GROW = 0.316;
+function tapKick(o, k = 1) { o.sq ||= 0; o.lift ||= 0; o.sv = (o.sv || 0) - UI.TAP_SQ * k; o.lv = (o.lv || 0) + UI.TAP_LIFT * k; return o; }
+function tapSprings(o, want, dt) {
+  o.lv += (want - o.lift) * UI.LIFT_K * dt - o.lv * UI.LIFT_C * dt; o.lift += o.lv * dt;
+  o.sv += -o.sq * UI.SQ_K * dt - o.sv * UI.SQ_C * dt; o.sq += o.sv * dt;
+}
+const tapStill = o => Math.abs(o.sq) < 0.002 && Math.abs(o.sv) < 0.05 && Math.abs(o.lift) < 0.002 && Math.abs(o.lv) < 0.05;
+// The tap on a page element (your score, a mode's name, the logo): the springs on the element's own
+// scale and translate (so whatever transform it has stays as it is), stopping once they're still.
+// Nothing with Reduce motion on.
+const domTaps = new Map();
+let domTapRun = false, domTapLast = 0;
+function domTap(el, k = 1) {
+  if (REDUCE || !el) return;
+  domTaps.set(el, tapKick(domTaps.get(el) || {}, k));
+  if (!domTapRun) { domTapRun = true; domTapLast = performance.now(); requestAnimationFrame(domTapTick); }
+}
+function domTapTick(now) {
+  // (a frame's timestamp can be from just before the tap: never a step back)
+  const dt = clamp((now - domTapLast) / 1000, 0, UI.DT_MAX); domTapLast = Math.max(domTapLast, now);
+  for (const [el, o] of domTaps) {
+    tapSprings(o, 0, dt);
+    if (tapStill(o) || REDUCE) { el.style.scale = el.style.translate = ''; domTaps.delete(el); continue; }
+    const sq = clamp(o.sq, UI.SQ_MIN, UI.SQ_MAX), g = 1 + TAP_GROW * o.lift;
+    el.style.scale = `${(g * (1 + sq)).toFixed(4)} ${(g * (1 - sq)).toFixed(4)}`; el.style.translate = `0 ${(-MENU.LIFT_PX * o.lift).toFixed(2)}px`;
+  }
+  if (domTaps.size) requestAnimationFrame(domTapTick); else domTapRun = false;
+}
+function spawnFloat(x, y, text, color, size, tier = 0, key = -1) {
+  const T = FLOAT_TIER[tier] || FLOAT_TIER[0];
+  let f = key >= 0 ? floats.find(q => q.k === key) : null;
+  if (!f) { f = { x, y, k: key, age: 0, rise: size * rnd(1.1, 1.4) }; floats.push(f); }
+  f.text = text; f.w = 0; f.color = color || T.color; f.border = T.border; f.size = size; f.max = T.max; f.t = 0;
+  tapKick(f, T.kick);
+}
+function addFloat(x, y, text, color, size, tier = 0, key = -1) {
+  spawnFloat(x, y, text, color, size, tier, key);
+  if (NET.role === 'host') netAll({ t: 'fl', x: Math.round(x), y: Math.round(y), s: text, c: color, z: size, r: tier, k: key });
+}
+// the holes' labels, just above each one on screen, upright with the table tilted or not, in the
+// game's painted text (paintTag)
+const HOLE_LABEL_GAP = 6, HOLE_LABEL_PX = 15;
+function drawHoleLabels(g) {
+  let m = null;
+  for (const p of pockets) {
+    if (!inView(p.x, p.y, 80)) continue;
+    const t = holeLabel(p); if (!t) continue;
+    let o = p._lbl;
+    if (!o || o.text !== t || o.tok !== HL.tok) o = p._lbl = { text: t, tok: HL.tok, size: HOLE_LABEL_PX, color: '#ffffff', border: '#000000', w: 0 };
+    if (!m) { m = g.getTransform(); g.textAlign = 'left'; g.textBaseline = 'middle'; }
+    g.setTransform(m.a, 0, 0, m.a, m.a * p.x + m.e, m.d * (p.y - p.r) + m.f - HOLE_LABEL_GAP * m.a);
+    paintTag(g, o);
+  }
+  if (m) { g.setTransform(m); g.textAlign = 'center'; }
+}
+// The game's painted text on the table (the floating numbers, the holes' labels): the title font in a
+// solid border with a hard drop shadow down and to the right, like the HUD's, and the points token in
+// front when `tok`. Drawn centred on the origin of the current transform with its foot there.
+// o: { text, size, color, border, tok, w } (w caches the width; clear it when the text changes)
+function paintTag(g, o) {
+  const px = o.size, s = String(o.text), tw = o.tok ? px * TOK_K : 0, gap = o.tok ? px * TOK_GAP : 0;
+  g.font = `400 ${px}px ${FONT_TITLE}`;
+  if (!o.w) o.w = tw + gap + g.measureText(s).width;
+  const x0 = -o.w / 2, xt = x0 + tw + gap, y = -px * 0.45, sh = px * 0.1;
+  g.lineWidth = px * 0.26; g.lineJoin = 'round'; g.strokeStyle = g.fillStyle = o.border;
+  g.strokeText(s, xt + sh, y + sh); g.fillText(s, xt + sh, y + sh);
+  g.strokeText(s, xt, y); g.fillStyle = o.color; g.fillText(s, xt, y);
+  if (o.tok) g.drawImage(TOK_IMG, x0 - tw * 0.08, y - tw / 2 - tw * 0.08, tw * 1.16, tw * 1.16);
+}
+// one float (a number gets the token)
+function drawFloat(g, f) { f.tok = typeof f.text === 'number'; paintTag(g, f); }
 
 // ---------- sound ----------
 // Everything is synthesised: no files. Each sound is a few layers (a filtered noise burst for the
@@ -2246,6 +2410,8 @@ function duck() {
 }
 // can it be heard: where it plays (pan, volume), or null when out of earshot or too many sounds are going
 const hear = (x, y, own, cap = 26) => actx && voices <= cap ? place(x, y, own) : null;
+// a special going off is worth hearing from anywhere: placed if it's near, half strength in the middle if not
+const heardAnyway = (x, y) => actx ? place(x, y, true) || { pan: 0, vol: 0.5 } : null;
 // one of each kind at a time: not again within `gap` s, and others' sounds also spend the background budget
 function rationed(key, gap, own, budget = true) {
   const t = actx.currentTime; if (t - lastAt[key] < gap || (!own && budget && !bgAllow())) return false;
@@ -2365,16 +2531,16 @@ function sfxCrack(x, y, own) {
 }
 // specials going off
 function sfxMagnet(x, y, own) {
-  if (!actx) return; const pl = place(x, y, true) || { pan: 0, vol: 0.5 }, t = actx.currentTime, d = out(pl.pan, t, 0.8, own);
+  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.8, own);
   tone(t, 'sawtooth', 90, 140, 0.18 * pl.vol, 0.7, d, 0.05); tone(t, 'sine', 220, 330, 0.25 * pl.vol, 0.6, d, 0.02);
 }
 function sfxFrost(x, y, own) {
-  if (!actx) return; const pl = place(x, y, true) || { pan: 0, vol: 0.5 }, t = actx.currentTime, d = out(pl.pan, t, 0.7, own);
+  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.7, own);
   noise(t, 0.4, 'highpass', 4000, 0.7, 0.35 * pl.vol, 0.35, d, 0.005);
   for (let i = 0; i < 3; i++) tone(t + i * 0.05, 'sine', 1800 + i * 600, 2400 + i * 600, 0.12 * pl.vol, 0.25, d, 0.002);
 }
 function sfxGold(x, y, own) {
-  if (!actx) return; const pl = place(x, y, true) || { pan: 0, vol: 0.5 }, t = actx.currentTime, d = out(pl.pan, t, 0.7, own);
+  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.7, own);
   [1046, 1318, 1568, 2093].forEach((f, i) => tone(t + i * 0.06, 'triangle', f, f, 0.16 * pl.vol, 0.25, d, 0.003));
 }
 function sfxShatter(x, y, own, hard) {
@@ -2507,7 +2673,10 @@ if (PC) {
     if (e.key === 'h' || e.key === 'H') $('helpBtn').click();
     if (e.key === 't' || e.key === 'T') $('tiltBtn').click();
     if (e.key === 'Enter' && !$('start').hidden) $('play').click();
+    if (e.key === 'Tab') { e.preventDefault(); if (!e.repeat) tabBoard(true); }
   });
+  addEventListener('keyup', e => { if (e.key === 'Tab') tabBoard(false); });
+  addEventListener('blur', () => tabBoard(false));
   addEventListener('blur', cancelDrag);
 }
 const maxDrag = () => PC ? 200 : Math.max(110, Math.min(VW, VH) * 0.3);
@@ -2540,6 +2709,38 @@ function drawDragOrigin(g) {
 
 // ---------- HUD ----------
 const $ = id => document.getElementById(id);
+const onTap = (id, f) => $(id).addEventListener('click', f);
+// Screens in and out with the shared transition (the .ui-in / .ui-out CSS). uiHide plays the way out
+// and then hides; showing again part-way through just turns it round. `shown` is whether it's on its
+// way in or up (not on its way out), which is what anything deciding on it wants.
+const UI_OUT_MS = 150;            // (with reduce motion on, screens still fade, so this stays)
+const shown = el => !el.hidden && !el.classList.contains('ui-out');
+function uiShow(el) {
+  if (el._outT) { clearTimeout(el._outT); el._outT = 0; }
+  const was = shown(el);
+  el.classList.remove('ui-out');
+  if (was) return;
+  el.hidden = false; el.classList.remove('ui-in'); void el.offsetWidth; el.classList.add('ui-in');
+  // once it's in, the animation lets go (so it holds nothing in place for later ones)
+  clearTimeout(el._inT); el._inT = setTimeout(() => el.classList.remove('ui-in'), 360);
+}
+function uiHide(el) {
+  if (el.hidden || el._outT) return;
+  clearTimeout(el._inT); el.classList.remove('ui-in'); el.classList.add('ui-out');
+  el._outT = setTimeout(() => { el._outT = 0; el.hidden = true; el.classList.remove('ui-out'); }, UI_OUT_MS);
+}
+const uiSet = (el, on) => on ? uiShow(el) : uiHide(el);
+// the title screen's views (the form, and each sheet): one at a time, the old one out before the new
+// one comes in, so the layout never jumps; `after` runs once the new one's up (anything that measures it)
+function menuTo(id, after) {
+  const to = $(id), from = ['startForm', ...SHEETS].map($).filter(e => e !== to && !e.hidden);
+  clearTimeout(menuTo.t);
+  for (const e of from) uiHide(e);
+  const go = () => { uiShow(to); after?.(); };
+  if (from.length && UI_OUT_MS) menuTo.t = setTimeout(go, UI_OUT_MS); else go();
+}
+// a canvas to exactly w × h pixels (setting its size clears it, so only when it changes)
+const sizeTo = (c, w, h) => { if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } };
 let lastBoard = '';
 const elScore = $('score'), elScoreN = $('scoreN'), elBoard = $('board'), elCap = $('scoreCap'), elNotice = $('notice');
 // ---------- points landing ----------
@@ -2563,6 +2764,7 @@ function gainFx(amt, wx, wy, caption, pk) {
 function land(amt) {
   streak = streakT > 0 ? streak + 1 : 0; streakT = 1.2;
   punch = Math.min(1, 0.45 + amt / 40);
+  domTap(elScore, 1 + Math.min(0.4, amt / 100));   // bigger hauls tap harder
   sfxClink(streak * 2, Math.min(1, amt / 40));
 }
 function updateScoreFx(dt) {
@@ -2580,13 +2782,11 @@ function updateScoreFx(dt) {
   if (shownScore > target) shownScore = target;
   else if (shownScore < target) shownScore = Math.min(target, shownScore + Math.max(1, Math.ceil((target - shownScore) * Math.min(1, dt * 12))));
   const txt = String(shownScore); if (elScoreN.textContent !== txt) elScoreN.textContent = txt;
-  // the punch: a quick swell that settles, and a yellow flash that fades
+  // the punch: the tap (domTap, from land) and a yellow flash that fades
   if (punch > 0) {
     punch = Math.max(0, punch - dt * 2.6);
-    const u = punch, sc = 1 + 0.32 * u * u * (REDUCE ? 0 : 1);
-    elScore.style.transform = `scale(${sc.toFixed(3)})`;
-    elScore.style.color = u > 0.05 ? `color-mix(in srgb, var(--gold) ${Math.round(u * 100)}%, var(--text))` : '';
-  } else if (elScore.style.transform) { elScore.style.transform = ''; elScore.style.color = ''; }
+    elScore.style.color = punch > 0.05 ? `color-mix(in srgb, var(--gold) ${Math.round(punch * 100)}%, var(--text))` : '';
+  } else if (elScore.style.color) elScore.style.color = '';
   if (capT > 0) { capT -= dt; elCap.style.opacity = Math.min(1, capT * 2.5).toFixed(2); if (capT <= 0) elCap.textContent = ''; }
 }
 // the flying points, in screen space on the effects layer
@@ -2619,8 +2819,6 @@ function drawFlyers(g) {
 }
 // where a world point lands on screen, in CSS px; give r for a ball's centre (lifted r off the felt when tilted)
 const scrX = x => (x * ZOOM * DPR + RX) / DPR, scrY = (y, r = 0) => (y * KY - r * LIFT) * ZOOM + RY / DPR;
-let flashMsg = null;
-function flash(text) { flashMsg = { text, t: 1.2 }; }
 const BOARD_N = 5;                          // rows on the leaderboard
 // a leaderboard row: place, name, a number; yours is highlighted
 const boardRow = (p, i, val, pre = '', v = me) => `<li class="${p === v ? 'me' : ''}"><span>${pre}${i + 1}. ${esc(p.name)}</span><span>${val}</span></li>`;
@@ -2630,16 +2828,15 @@ let hudT = 0;
 // which layer is up decides what shows: a card (you went down, a party round card) hides the
 // notice pill, and the cursor is hidden only while you can aim on the table
 function syncLayers() {
-  const card = !deathEl.hidden || !pCard.hidden, cl = document.body.classList;
-  cl.toggle('card', card); cl.toggle('partyup', !pCard.hidden);
+  const card = shown(deathEl) || shown(pCard), cl = document.body.classList;
+  cl.toggle('card', card); cl.toggle('partyup', shown(pCard));
   cl.toggle('aim', started && !cl.contains('menu') && !card && (me.alive || !!ghost));
 }
 function updateHud(dt) {
   syncLayers();
-  if (flashMsg) { flashMsg.t -= dt; if (flashMsg.t <= 0) flashMsg = null; }
   if (!me.alive && started && !deathEl.hidden && deathCount) {
-    const t = `Back in ${Math.max(1, Math.ceil(me.respawnT))}`;
-    if (deathCount.textContent !== t) deathCount.textContent = t;
+    const t = String(Math.max(1, Math.ceil(me.respawnT)));
+    if (deathCount.textContent !== t) { deathCount.textContent = t; deathCount.classList.remove('tick'); void deathCount.offsetWidth; deathCount.classList.add('tick'); }
   }
   updateScoreFx(dt);
   hudT -= dt; if (hudT > 0) return; hudT = 0.2;
@@ -2649,18 +2846,49 @@ function updateHud(dt) {
   sorted.slice(0, BOARD_N).forEach((p, i) => { html += boardRow(p, i, p.score, i === 0 && p === leader ? CROWN_SVG : ''); });
   if (started && rank >= BOARD_N) html += boardRow(me, rank, me.score);
   if (html !== lastBoard) { lastBoard = html; elBoard.innerHTML = html; }
+  if (tabOn) fillTab();
+}
+// Holding Tab (on a computer) brings up the whole table's standings in the middle of the screen, the
+// same board as the round's and the party's end screens: in a party, everyone by their party total
+// (the corner board has this round's points); otherwise everyone by score, the leader crowned
+let tabOn = false, lastTab = '';
+function tabBoard(on) {
+  on = on && started && !document.body.classList.contains('menu');
+  if (on === tabOn) return;
+  tabOn = on;
+  if (on) { lastTab = ''; fillTab(); uiShow($('tabBoard')); } else uiHide($('tabBoard'));
+}
+function fillTab() {
+  const party_ = MODE === 'party' && party.phase !== 'off', r = party_ && party.phase !== 'lobby' && party.phase !== 'podium' ? curRound() : null;
+  let rows;
+  if (party_) {
+    const tot = p => party.total.get(p) || 0;
+    rows = players.slice().sort((a, b) => tot(b) - tot(a) || b.score - a.score).map((p, i) => boardRow(p, i, tot(p))).join('');
+  } else rows = players.slice().sort(byScore).map((p, i) => boardRow(p, i, p.score, i === 0 && p === leader ? CROWN_SVG : '')).join('');
+  const kind = party_ ? (r ? `${r.name} · Round ${party.i + 1} of ${party.list.length}` : 'Party') : MODE === 'debug' ? 'Debug' : 'Arena';
+  const html = kind + '|' + rows;
+  if (html === lastTab) return;
+  lastTab = html; $('tabKind').textContent = kind; $('tabList').innerHTML = rows;
 }
 const deathEl = $('death');
 let deathCount = null;
-// the card over the table when you go down; with a countdown to coming back unless you're out
+// The card over the table when you go down: what happened, a line on what it cost, and (unless you're
+// out for good) the countdown to coming back, big. (A trailing <br> from older callers is dropped.)
 function deathCard(title, html = '', countdown = true) {
   $('deathTitle').textContent = title;
-  $('deathText').innerHTML = html + (countdown ? '<span id="deathCount"></span>' : '');
-  deathCount = $('deathCount'); deathEl.hidden = false;
+  $('deathText').innerHTML = html.replace(/(<br>\s*)+$/, '');
+  $('deathCd').hidden = !countdown;
+  deathCount = countdown ? $('deathCount') : null;
+  if (deathCount) deathCount.textContent = String(Math.max(1, Math.ceil(me.respawnT || 1)));
+  // a new card while one's up just changes what it says; otherwise it comes in
+  if (shown(deathEl)) { const d = deathEl.firstElementChild; d.style.animation = 'none'; void d.offsetWidth; d.style.animation = ''; } else uiShow(deathEl);
 }
+// points as they're shown everywhere: the token, then the number, in gold
+const ptsHTML = n => `<b class="pts"><svg class="tok" viewBox="0 0 24 24" aria-hidden="true"><use href="#tokP"/></svg>${n}</b>`;
 function showDeath(killer, S, toKiller, edge) {
-  deathCard(edge ? (killer ? `${killer.name} knocked you off` : 'You fell off') : (killer ? `${killer.name} potted you` : 'You scratched'),
-    S > 0 ? (killer ? `${esc(killer.name)} took ${toKiller} · ${S - toKiller} is loose in a gold ball` : `Your ${S} points are loose in a gold ball`) + '<br>' : '');
+  // short and punchy: what happened, then who got what (the rest of your points are in the gold ball)
+  deathCard(killer ? (edge ? 'Knocked off!' : 'Potted!') : (edge ? 'Fell off!' : 'Scratched!'),
+    S > 0 ? (killer ? `${esc(killer.name)} got ${Math.round(KILL_SHARE * 100)}%${S - toKiller > 0 ? ` · grab back ${ptsHTML(S - toKiller)}` : ''}` : `Grab back your ${ptsHTML(S)}`) : killer ? `by ${esc(killer.name)}` : '');
 }
 
 // ---------- WebGL ball renderer ----------
@@ -2994,6 +3222,160 @@ function initGL() {
 initGL();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(uploadAtlas);
 
+// ---------- instanced sprites: shadows, glows and particles ----------
+// Everything drawn once per object besides the balls themselves goes through one small shader on the
+// balls' own WebGL canvas, all of a kind in one instanced draw: under the balls, their shadows (in one
+// pass that merges where they overlap, like real shadows), then the dents heavy balls press into the
+// felt and the gold, Midas and ice glows; over the balls, every particle (sparks, stars, glints,
+// burst bits, rings, snow). Each instance is a quad: where (x, y, turn), how big (rx, ry, and two
+// numbers the shape uses), a colour, and which shape.
+const SPR_F = 12, SPR_MAX = 1536, sprData = new Float32Array(SPR_F * SPR_MAX);
+const SPR = { ELLIPSE: 0, GLOW: 1, DIP: 2, SQUARE: 3, STREAK: 4, RING: 5, STAR: 6, GLINT: 7 };
+const SPR_VS = `#version 300 es
+layout(location=0) in vec2 a_corner;
+layout(location=1) in vec3 a_p; layout(location=2) in vec4 a_s; layout(location=3) in vec4 a_c; layout(location=4) in float a_k;
+uniform vec2 u_cam; uniform float u_zoom; uniform vec2 u_view; uniform float u_k; uniform float u_up;
+out vec2 v_l; flat out vec4 v_s; flat out vec4 v_c; flat out float v_k; out float v_aa;
+void main(){
+  float ca = cos(a_p.z), sa = sin(a_p.z);
+  vec2 l = a_corner * (a_s.xy + 1.5 / u_zoom);                         // a pixel and a half of room for the soft edge
+  vec2 w = a_p.xy + vec2(l.x * ca - l.y * sa, l.x * sa + l.y * ca);
+  vec2 cs = vec2((w.x - u_cam.x) * u_zoom, ((w.y - u_cam.y) * u_k - u_up) * u_zoom) + 0.5 * u_view;
+  vec2 clip = cs / u_view * 2.0 - 1.0;
+  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+  v_l = l; v_s = a_s; v_c = a_c; v_k = a_k; v_aa = 0.75 / u_zoom;
+}`;
+const SPR_FS = `#version 300 es
+precision mediump float;
+in vec2 v_l; flat in vec4 v_s; flat in vec4 v_c; flat in float v_k; in float v_aa;
+out vec4 o;
+float edge(float d) { return 1.0 - smoothstep(-v_aa, v_aa, d); }
+void main(){
+  int k = int(v_k + 0.5); vec2 l = v_l; float a = 0.0;
+  if (k == 0) {                 // a filled ellipse, crisp edged: shadows, snow, the armed bomb's glow
+    a = edge((length(l / v_s.xy) - 1.0) * min(v_s.x, v_s.y));
+  } else if (k == 1) {          // a glow: full under the ball's rim (at z), then easing off to nothing
+    float t = length(l / v_s.xy), e = v_s.z, e1 = e + (1.0 - e) * 0.25, e2 = e + (1.0 - e) * 0.55;
+    a = t < e ? 1.0 : t < e1 ? mix(1.0, 0.42, (t - e) / (e1 - e)) : t < e2 ? mix(0.42, 0.14, (t - e1) / (e2 - e1)) : t < 1.0 ? mix(0.14, 0.0, (t - e2) / (1.0 - e2)) : 0.0;
+  } else if (k == 2) {          // a heavy ball's dent in the cloth
+    float t = length(l / v_s.xy);
+    a = t < 0.55 ? mix(1.0, 0.85, t / 0.55) : t < 0.75 ? mix(0.85, 0.35, (t - 0.55) / 0.2) : t < 1.0 ? mix(0.35, 0.0, (t - 0.75) / 0.25) : 0.0;
+  } else if (k == 3) {          // a square bit
+    vec2 d = abs(l) - v_s.xy; a = edge(max(d.x, d.y));
+  } else if (k == 4) {          // a streak with round ends: half length z, half width w
+    a = edge(length(vec2(max(abs(l.x) - v_s.z, 0.0), l.y)) - v_s.w);
+  } else if (k == 5) {          // a ring: radius z, width w
+    a = edge(abs(length(l) - v_s.z) - v_s.w * 0.5);
+  } else if (k == 6) {          // a four-point star: points out at z, in at w
+    float s = mod(atan(l.y, l.x) + 0.7853982, 1.5707963) - 0.7853982;
+    vec2 p = vec2(cos(s), abs(sin(s))) * length(l), v1 = vec2(v_s.z, 0.0), e = vec2(v_s.w * 0.7071068) - v1;
+    a = edge(dot(p - v1, normalize(vec2(e.y, -e.x))));
+  } else {                      // a glint: two thin diamonds crossed, half length z, half width w
+    vec2 q = abs(l);
+    a = edge(min(q.x / v_s.w + q.y / v_s.z, q.y / v_s.w + q.x / v_s.z) * v_s.w - v_s.w);
+  }
+  a *= v_c.a;
+  o = vec4(v_c.rgb * a, a);
+}`;
+let sprGL = null;
+function makeSpriteGL(R) {
+  const g = R.gl;
+  const sh = (t, src) => { const x = g.createShader(t); g.shaderSource(x, src); g.compileShader(x); if (!g.getShaderParameter(x, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(x)); return x; };
+  const prog = g.createProgram();
+  g.attachShader(prog, sh(g.VERTEX_SHADER, SPR_VS)); g.attachShader(prog, sh(g.FRAGMENT_SHADER, SPR_FS)); g.linkProgram(prog);
+  if (!g.getProgramParameter(prog, g.LINK_STATUS)) throw new Error(g.getProgramInfoLog(prog));
+  const vao = g.createVertexArray(); g.bindVertexArray(vao);
+  const qb = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, qb);
+  g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+  g.enableVertexAttribArray(0); g.vertexAttribPointer(0, 2, g.FLOAT, false, 0, 0);
+  const inst = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, inst); g.bufferData(g.ARRAY_BUFFER, sprData.byteLength, g.DYNAMIC_DRAW);
+  let off = 0;
+  for (const [loc, n] of [[1, 3], [2, 4], [3, 4], [4, 1]]) { g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, n, g.FLOAT, false, SPR_F * 4, off); g.vertexAttribDivisor(loc, 1); off += n * 4; }
+  g.bindVertexArray(null);
+  const L = n => g.getUniformLocation(prog, n);
+  return { prog, vao, inst, n: 0, U: { cam: L('u_cam'), zoom: L('u_zoom'), view: L('u_view'), k: L('u_k'), up: L('u_up') } };
+}
+try { if (mainGL) sprGL = makeSpriteGL(mainGL); } catch (e) { console.warn('instanced sprites off:', e); sprGL = null; }
+// colours as 0..1 rgb from '#rgb', '#rrggbb', 'rgb(...)' or 'rgba(...)' (alpha multiplied in), cached
+const sprColCache = new Map();
+function sprCol(c) {
+  let v = sprColCache.get(c); if (v) return v;
+  if (c[0] === '#') { const q = rgb(c); v = [q[0], q[1], q[2], 1]; }
+  else { const m = c.match(/[\d.]+/g) || [0, 0, 0]; v = [m[0] / 255, m[1] / 255, m[2] / 255, m[3] !== undefined ? +m[3] : 1]; }
+  if (sprColCache.size > 256) sprColCache.clear();
+  sprColCache.set(c, v); return v;
+}
+// add one sprite (colour as a CSS colour string, times alpha a)
+function spr(x, y, ang, rx, ry, p1, p2, col, a, kind) {
+  const S = sprGL; if (S.n >= SPR_MAX || a <= 0.003) return;
+  const c = sprCol(col), o = S.n++ * SPR_F;
+  sprData[o] = x; sprData[o + 1] = y; sprData[o + 2] = ang;
+  sprData[o + 3] = rx; sprData[o + 4] = ry; sprData[o + 5] = p1; sprData[o + 6] = p2;
+  sprData[o + 7] = c[0]; sprData[o + 8] = c[1]; sprData[o + 9] = c[2]; sprData[o + 10] = c[3] * Math.min(1, a); sprData[o + 11] = kind;
+}
+// draw what's been added, then start again; `up` lifts it (world units) to the plane through ball centres
+function sprFlush(camX, camY, up, max) {
+  const S = sprGL, g = gl; if (!S.n) return;
+  g.useProgram(S.prog); g.bindVertexArray(S.vao); g.bindBuffer(g.ARRAY_BUFFER, S.inst);
+  g.bufferSubData(g.ARRAY_BUFFER, 0, sprData, 0, S.n * SPR_F);
+  g.uniform2f(S.U.cam, camX, camY); g.uniform1f(S.U.zoom, ZOOM); g.uniform2f(S.U.view, VW, VH); g.uniform1f(S.U.k, KY); g.uniform1f(S.U.up, up);
+  g.enable(g.BLEND);
+  // merged shadows: black, so only the alpha matters, and it takes the darker of the two where they meet
+  if (max) { g.blendEquationSeparate(g.FUNC_ADD, g.MAX); g.blendFunc(g.ONE, g.ONE); }
+  else { g.blendEquation(g.FUNC_ADD); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA); }
+  g.drawArraysInstanced(g.TRIANGLE_STRIP, 0, 4, S.n);
+  g.blendEquation(g.FUNC_ADD); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
+  g.bindVertexArray(null); S.n = 0;
+}
+const GLOWS = { loot: ['rgb(255,196,64)', 1 / 2.1], gold: ['rgb(255,206,60)', 1 / 2.4], ice: ['rgb(225,244,255)', 1 / 1.9] };
+// what goes under the balls: the shadows (merged), then dents and glows
+function sprUnder(list, camX, camY) {
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i], m00 = b.d0 ?? 1, m01 = b.d1 ?? 0, m11 = b.d2 ?? 1, h = heft(b) || 0;
+    if (m00 === 1 && !m01 && m11 === 1 && b.kind !== 'cue' && b.fade === undefined) { spr(b.x + b.r * 0.22, b.y + b.r * 0.3, 0, b.r * 1.02, b.r * 1.02, 0, 0, '#000', SHADOW_A, SPR.ELLIPSE); continue; }
+    const ang = 0.5 * Math.atan2(2 * m01, m00 - m11), mid = (m00 + m11) / 2, rad = Math.hypot((m00 - m11) / 2, m01), tuck = 1 - 0.45 * h;
+    spr(b.x + b.r * 0.22 * tuck, b.y + b.r * 0.3 * tuck, ang, b.r * (mid + rad) * 1.02, Math.max(0.1, b.r * (mid - rad) * 0.98), 0, 0, '#000', SHADOW_A * ballAlpha(b) * (1 + 0.9 * h), SPR.ELLIPSE);
+  }
+  sprFlush(camX, camY, 0, true);
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i], h = heft(b) || 0;
+    if (h >= 0.04) { const rr = b.r * (1.3 + 1.1 * h); spr(b.x, b.y, 0, rr, rr, 0, 0, '#000', (0.15 + 0.45 * h) * ballAlpha(b), SPR.DIP); }
+    const glow = (G, rr, a) => spr(b.x, b.y, 0, rr, rr, G[1], 0, G[0], a, SPR.GLOW);
+    if (b.kind === 'midas' && b.goldT > time) glow(GLOWS.gold, b.r * 2.4, (0.42 + 0.06 * Math.sin(time * 3)) * Math.min(1, b.goldT - time));
+    if (b.frozenT > time) glow(GLOWS.ice, b.r * 1.9, 0.3 + 0.25 * Math.max(0, b.ice || 0));
+    if (b.kind === 'loot') glow(GLOWS.loot, b.r * 2.1 * popS(b), 0.34 + 0.05 * Math.sin(time * 2.2 + b.id));
+    else if (b.kind === 'bomb' && b.count <= 1) { const rr = b.r + 6 + Math.sin(time * 14) * 2; spr(b.x, b.y, 0, rr, rr, 0, 0, 'rgba(236,106,61,0.4)', 1, SPR.ELLIPSE); }
+  }
+  sprFlush(camX, camY, 0, false);
+}
+// ...and over them: the gold balls' glints, then every particle, as the effects layer drew them
+function sprOver(list, camX, camY) {
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i], n = b.kind === 'loot' ? 2 : b.kind === 'midas' && b.goldT > time ? 3 : 0, a = n === 2 ? 0.8 : 0.9;
+    for (let j = 0; j < n; j++) {
+      const ph = time * 0.9 + j * (TAU / n) + b.id * 1.7, tw = Math.max(0, Math.sin(time * 2.3 + j * 2.1 + b.id)); if (tw < 0.05) continue;
+      const s2 = 1.6 + 1.6 * tw;
+      spr(b.x + Math.cos(ph) * b.r * 1.15, b.y + Math.sin(ph) * b.r * 1.15, 0, s2 * 1.8, s2 * 1.8, s2 * 1.8, s2 * 0.45, '#fff6d6', a * tw, SPR.GLINT);
+    }
+  }
+  for (const q of particles) {
+    const k = q.life / q.max;
+    if (q.ring) { const r = q.r1 + (q.r0 - q.r1) * k, w = 4 * k; spr(q.x, q.y, 0, r + w, r + w, r, w, q.color, k, SPR.RING); continue; }
+    if (q.snow) { const r = q.size * PXW; spr(q.x, q.y, 0, r, r, 0, 0, '#ffffff', Math.min(1, k * 1.6) * 0.9, SPR.ELLIPSE); continue; }
+    if (q.spark) {
+      const sp = Math.hypot(q.vx, q.vy), hl = sp * 0.0175, hw = (1.4 + 1.6 * k) / 2;
+      spr(q.x - q.vx * 0.0175, q.y - q.vy * 0.0175, Math.atan2(q.vy, q.vx), hl + hw, hw, hl, hw, q.color, Math.min(1, k * 3.5), SPR.STREAK); continue;
+    }
+    if (q.twinkle) { const tw = Math.sin((1 - k) * Math.PI), s2 = q.size * (0.5 + 0.5 * tw); spr(q.x, q.y, 0, s2 * 1.8, s2 * 1.8, s2 * 1.8, s2 * 0.45, '#fff6d6', tw, SPR.GLINT); continue; }
+    if (q.star) {
+      const u = 1 - k, sc = Math.sin(Math.min(1, u * 3.2) * Math.PI / 2) * (1 - u * u) * (0.85 + 0.15 * Math.sin(u * 40)), R1 = q.size * sc;
+      spr(q.x, q.y, q.rot + u * 2, R1, R1, R1, R1 * 0.32, q.color, Math.min(1, k * 3), SPR.STAR); continue;
+    }
+    spr(q.x, q.y, 0, q.size / 2, q.size / 2, 0, 0, q.color, k, SPR.SQUARE);
+  }
+  sprFlush(camX, camY, R * LIFT, false);
+}
+
 const rgbCache = {};
 function rgb(hex) {
   if (rgbCache[hex]) return rgbCache[hex];
@@ -3029,6 +3411,33 @@ function ballLook(b) {
 const drawList = [], vis = [], byDepth = (a, b) => a.y - b.y;
 // the balls on screen this frame, gathered once
 // (read off the grid cells under the view rather than every ball on the table)
+// Ball shadows, in a few fills whatever's on screen. Each shadow goes into the path for how dark it is
+// (in steps of 0.05) and each path is filled once. A plain resting ball is a circle at full strength;
+// a squash stretches it into a tilted ellipse, a fade lightens it, and a heavy player's tucks in under
+// the ball and darkens. (Shadows in one path that overlap merge rather than doubling up, as on felt.)
+const SHADOW_A = 0.3, SHADOW_FULL = Math.round(SHADOW_A * 20);
+const SHADOW_FILL = Array.from({ length: 21 }, (_, k) => `rgba(0,0,0,${k / 20})`);
+const shadowBins = Array.from({ length: 21 }, () => []);   // per darkness step: [cx, cy, rx, ry, angle, ...]
+function drawShadows(g, list) {
+  // the plain ones straight into the full-strength path; the rest sorted into their steps
+  g.fillStyle = SHADOW_FILL[SHADOW_FULL]; g.beginPath();
+  let any = false;
+  for (let i = 0; i < list.length; i++) {
+    const b = list[i], m00 = b.d0 ?? 1, m01 = b.d1 ?? 0, m11 = b.d2 ?? 1;
+    if (m00 === 1 && !m01 && m11 === 1 && b.kind !== 'cue' && b.fade === undefined) {
+      g.moveTo(b.x + b.r * 1.24, b.y + b.r * 0.3); g.arc(b.x + b.r * 0.22, b.y + b.r * 0.3, b.r * 1.02, 0, TAU); continue;
+    }
+    const h = heft(b) || 0, k = Math.min(20, Math.round(SHADOW_A * ballAlpha(b) * (1 + 0.9 * h) * 20)); if (k <= 0) continue;
+    const ang = 0.5 * Math.atan2(2 * m01, m00 - m11), mid = (m00 + m11) / 2, rad = Math.hypot((m00 - m11) / 2, m01), tuck = 1 - 0.45 * h;
+    shadowBins[k].push(b.x + b.r * 0.22 * tuck, b.y + b.r * 0.3 * tuck, b.r * (mid + rad) * 1.02, Math.max(0.1, b.r * (mid - rad) * 0.98), ang);
+    any = true;
+  }
+  // the full-strength step also takes any ellipses at that strength, so it's one fill
+  const add = q => { for (let i = 0; i < q.length; i += 5) { const cx = q[i], cy = q[i + 1], rx = q[i + 2], a = q[i + 4]; g.moveTo(cx + Math.cos(a) * rx, cy + Math.sin(a) * rx); g.ellipse(cx, cy, rx, q[i + 3], a, 0, TAU); } q.length = 0; };
+  add(shadowBins[SHADOW_FULL]); g.fill();
+  if (!any) return;
+  for (let k = 1; k <= 20; k++) { const q = shadowBins[k]; if (!q.length) continue; g.fillStyle = SHADOW_FILL[k]; g.beginPath(); add(q); g.fill(); }
+}
 function gatherVis() {
   const hw = VW / 2 / ZOOM + 40, hh = VH / 2 / (ZOOM * KY) + 40 + R;
   ballsIn(cam.x - hw, cam.y - hh, cam.x + hw, cam.y + hh, vis);
@@ -3047,7 +3456,9 @@ function renderBallsGL(camX, camY) {
     BRK_U[bn * 4] = h.v[0]; BRK_U[bn * 4 + 1] = h.v[1]; BRK_U[bn * 4 + 2] = h.v[2];
     const u = Math.min(1, (time - h.t) / 0.25); BRK_U[bn * 4 + 3] = 1 - (1 - u) * (1 - u); bn++;
   }
+  if (sprGL) sprUnder(vis, camX, camY);
   drawBallsWith(mainGL, drawList, camX, camY, ZOOM, VW, VH, KY, LIFT, bn);
+  if (sprGL) sprOver(vis, camX, camY);
 }
 
 // ---------- 2D render ----------
@@ -3121,7 +3532,7 @@ function text(g, t, x, y, size, color, weight = 700) { g.font = `${weight} ${siz
 
 // flat fallback when WebGL2 isn't available
 function drawBallFlat(b) {
-  const g = ctx, { x, y } = b, r = b.r * popS(b);
+  const g = kctx, { x, y } = b, r = b.r * popS(b);
   g.save(); g.translate(x, y); g.transform(b.d0 ?? 1, b.d1 ?? 0, b.d1 ?? 0, b.d2 ?? 1, 0, 0); g.translate(-x, -y);
   const L = ballLook(b);
   g.globalAlpha = L[5];
@@ -3161,22 +3572,11 @@ function drawCue(g, b, dx, dy, pow, color, w = b === me.ball ? PXW : 1) {
 const LOOK_STEP = 15;                    // ticks between timeline dots (0.25 s)
 const MOVE_AHEAD = 30;                   // movement dots show +0.5 s
 const OUTCOME_TICKS = 150;               // how far the shot is run to see what it pots (2.5 s)
+// ...but no longer than this a go (the guide shows what it got through); an ordinary table takes well
+// under 1 ms here and a few on a phone, so only a packed crowd ever hits it
+const SHOT_MS = 8;
 // copy the balls near the camera into plain records the forward sim can push around
-function cloneNear(margin) {
-  const hw = VW / 2 / ZOOM + margin, hh = VH / 2 / (ZOOM * KY) + margin, out = [];
-  for (const b of ballsIn(cam.x - hw, cam.y - hh, cam.x + hw, cam.y + hh, nearA)) {
-    // a resting ball only needs the pocket forces if it sits on a lip or inside a magnet's pull
-    let nearField = false;
-    for (const p of pockets) { const d = Math.hypot(p.x - b.x, p.y - b.y); if (d < p.r + b.r * 0.5 + 1 || (p.mag && b.kind === 'cue' && d < MAGNET_R)) { nearField = true; break; } }
-    for (const m of pullers) if (!m.dead && Math.hypot(m.x - b.x, m.y - b.y) < PULL_R) nearField = true;
-    out.push({ ref: b, x: b.x, y: b.y, vx: b.vx, vy: b.vy, r: b.r, m: b.m, kind: b.kind, owner: b.owner,
-               value: b.value, count: b.count, slip: b.slip || 0, noDrop: b.noDrop, noDropT: b.noDropT, frozenT: b.frozenT || 0, field: false, alive: true, moved: !!(b.vx || b.vy),
-               track: [], pocket: null, potTick: 0, nearField, mv: false,
-               // the sim's own fields, all set up front so every copy has the same shape
-               t: 0, ver: 0, gi: -1, gs: 0, fm: 0, fa: 0, dead: false, rec: false, path: null, bounceAt: -1, contactIdx: 0, fell: false });
-  }
-  return out;
-}
+const cloneNear = margin => cloneBox(cam.x, cam.y, VW / 2 / ZOOM + margin, VH / 2 / (ZOOM * KY) + margin);
 // run the copies forward `ticks` ticks with the live rules (forces, friction, exact impacts,
 // fixed-point snapping). `mine` is the copy to watch for its first contact. With `minTicks` set,
 // the run stops early once `mine` and whatever it hit have come to rest or dropped.
@@ -3195,8 +3595,13 @@ const goneCopy = c => { c.alive = false; c.dead = true; };
 // With `fire`, `mine` isn't hit yet: it rolls on as it is and the shot ({vx, vy}) goes in at the first
 // tick it would be allowed (slower than fire.limit, fire.wait ticks gone), the way a shot let go a
 // moment early waits for the ball; not by fire.until, and there is no shot. mine.fireAt says where.
-function runForward(cl, ticks, mine, minTicks = 0, fire = null) {
+// With `ms`, it stops after that long, however far it's got (runForward.cut says it did): a packed
+// crowd (a magnet's pull, a break) is a hit on every ball every tick, and a forecast of it is as dear
+// as that many frames of the live table.
+function runForward(cl, ticks, mine, minTicks = 0, fire = null, ms = 0) {
   let contact = null, n = 0, fTick = 0, fired = !fire;
+  const end = ms ? performance.now() + ms : 0;
+  runForward.cut = false;
   const movers = [], act = [];
   const track = () => { for (const c of cl) c.track.push(c.alive ? c.x : NaN, c.alive ? c.y : NaN); };
   // what a hit means here: watch for `mine`'s first contact, and wake whatever gets hit
@@ -3227,6 +3632,7 @@ function runForward(cl, ticks, mine, minTicks = 0, fire = null) {
     if (c.vx || c.vy || c.nearField) { c.fa = 1; act.push(c); }
   }
   for (n = 1; n <= ticks; n++) {
+    if (end && performance.now() > end) { runForward.cut = true; break; }
     fTick = ++runForward.id;
     if (!fired) {
       if (!mine.alive || n - 1 > fire.until) break;
@@ -3264,14 +3670,22 @@ function runForward(cl, ticks, mine, minTicks = 0, fire = null) {
   return contact;
 }
 runForward.id = 0;
-// the world 0.5 s from now, recomputed every tick while anything near you moves
+// Where your ball will be 0.5 s from now, recomputed every tick while it moves. Only what it could meet
+// in that time is copied (as far as it rolls, plus room for anything coming at it). It gets MOVE_MS:
+// one that runs out (a crowd your ball is caught in) keeps the last answer, and while they're that
+// dear it's only worked out again every few ticks.
+const MOVE_MS = 1.5, MOVE_REACH = 260;
 let movePred = null;
 function movementForecast() {
-  if (movePred && movePred.tick === tickN) return movePred.cl;
-  const cl = cloneNear(220);
-  let any = false; for (const c of cl) if (c.moved) { any = true; break; }
-  if (any) runForward(cl, MOVE_AHEAD, null);
-  movePred = { tick: tickN, cl: any ? cl : [] };
+  if (movePred && tickN - movePred.tick < movePred.every) return movePred.cl;
+  const c = me.ball, reach = Math.min(700, Math.hypot(c.vx, c.vy) * MOVE_AHEAD * TICK + MOVE_REACH);
+  const cl = cloneBox(c.x, c.y, reach, reach);
+  let any = false; for (const x of cl) if (x.moved) { any = true; break; }
+  const t0 = performance.now();
+  if (any) runForward(cl, MOVE_AHEAD, null, 0, null, MOVE_MS);
+  const took = performance.now() - t0, cut = any && runForward.cut;
+  const every = took > MOVE_MS / 2 ? Math.min(6, 1 + Math.ceil(took / (MOVE_MS / 2))) : 1;
+  movePred = cut ? { tick: tickN, cl: movePred ? movePred.cl : [], every: 6 } : { tick: tickN, cl: any ? cl : [], every };
   return movePred.cl;
 }
 // your shot played out against the moving table; recomputed when the aim changes or every 2 ticks
@@ -3292,7 +3706,7 @@ function shotForecast(a) {
   if (eligible(me)) { mine.vx = sx; mine.vy = sy; mine.moved = true; }
   else if (c.frozenT > time || (MODE === 'party' && party.phase !== 'play')) { shotPred = null; return null; }
   else fire = { vx: sx, vy: sy, limit: 0.1 * maxPow(me), wait: Math.ceil(Math.max(0, me.cooldown) / TICK), until: Math.ceil(SHOT_GRACE / TICK) };
-  const contact = runForward(cl, OUTCOME_TICKS, mine, 60, fire);
+  const contact = runForward(cl, OUTCOME_TICKS, mine, 60, fire, SHOT_MS);
   shotPred = mine.fireAt ? { key, tick: tickN, cl, mine, contact } : null;
   return shotPred;
 }
@@ -3305,7 +3719,7 @@ function drawMovementDots(g, skip) {
   for (const c of cl) {
     if (!c.moved || c.ref === skip || c.ref !== me.ball) continue;     // only your own ball
     const i = (idx - 1) * 2, x = c.track[i], y = c.track[i + 1];
-    if (!(x === x)) continue;                         // potted before then
+    if (x === undefined || !(x === x)) continue;     // potted before then (or not worked out that far)
     const d2 = (x - c.ref.x) ** 2 + (y - c.ref.y) ** 2; if (d2 < (c.r + 3) ** 2) continue;
     const player = c.kind === 'cue';
     g.globalAlpha = player ? 0.95 : 0.6;
@@ -3366,28 +3780,29 @@ let PXW = 1;
 function fadePath(g, pts, color, width, a0, a1) {
   if (pts.length < 4 || polyLen(pts) < 1) return;
   const n = pts.length; width *= PXW;
+  const trace = (style, w) => { g.strokeStyle = style; g.lineWidth = w; g.beginPath(); g.moveTo(pts[0], pts[1]); for (let i = 2; i < n; i += 2) g.lineTo(pts[i], pts[i + 1]); g.stroke(); };
+  g.lineCap = 'round'; g.lineJoin = 'round';
   // a soft dark underlay so the line holds up over bright felt and busy tables
-  g.strokeStyle = `rgba(0,0,0,${0.22 * aimAlpha})`; g.lineWidth = width + 2.2 * PXW; g.lineCap = 'round'; g.lineJoin = 'round';
-  g.beginPath(); g.moveTo(pts[0], pts[1]); for (let i = 2; i < n; i += 2) g.lineTo(pts[i], pts[i + 1]); g.stroke();
+  trace(`rgba(0,0,0,${0.22 * aimAlpha})`, width + 2.2 * PXW);
   const gr = g.createLinearGradient(pts[0], pts[1], pts[n - 2], pts[n - 1]);
   gr.addColorStop(0, rgba(color, a0 * aimAlpha)); gr.addColorStop(1, rgba(color, a1 * aimAlpha));
-  g.strokeStyle = gr; g.lineWidth = width; g.lineCap = 'round'; g.lineJoin = 'round';
-  g.beginPath(); g.moveTo(pts[0], pts[1]);
-  for (let i = 2; i < n; i += 2) g.lineTo(pts[i], pts[i + 1]);
-  g.stroke(); g.lineCap = 'butt';
+  trace(gr, width);
+  g.lineCap = 'butt';
 }
-// drop the first `dist` of a path, so it starts just outside the ball it comes from
-function trimPath(pts, bounceAt, dist) {
+// the point `dist` along a polyline, and the index of the point after it (null if it's shorter than that)
+function walkTo(pts, dist) {
   let left = dist;
   for (let i = 2; i < pts.length; i += 2) {
     const x0 = pts[i - 2], y0 = pts[i - 1], L = Math.hypot(pts[i] - x0, pts[i + 1] - y0);
-    if (L >= left) {
-      const t = left / (L || 1), out = [x0 + (pts[i] - x0) * t, y0 + (pts[i + 1] - y0) * t].concat(pts.slice(i));
-      return { pts: out, bounceAt: bounceAt > i ? bounceAt - i + 2 : -1 };
-    }
+    if (L >= left) { const t = left / (L || 1); return { i, x: x0 + (pts[i] - x0) * t, y: y0 + (pts[i + 1] - y0) * t }; }
     left -= L;
   }
-  return { pts: [], bounceAt: -1 };
+  return null;
+}
+// drop the first `dist` of a path, so it starts just outside the ball it comes from
+function trimPath(pts, bounceAt, dist) {
+  const w = walkTo(pts, dist);
+  return w ? { pts: [w.x, w.y].concat(pts.slice(w.i)), bounceAt: bounceAt > w.i ? bounceAt - w.i + 2 : -1 } : { pts: [], bounceAt: -1 };
 }
 function pathLineDots(g, sim, color, width, endAlpha, skip = 0) {
   const tr = skip ? trimPath(sim.pts, sim.bounceAt, skip) : sim;
@@ -3399,14 +3814,11 @@ function pathLineDots(g, sim, color, width, endAlpha, skip = 0) {
   } else fadePath(g, pts, color, width, 0.95, endAlpha);
 }
 // cut a path to at most `max` units long
-function cutPath(pts, max) {
-  const out = [pts[0], pts[1]]; let left = max;
-  for (let i = 2; i < pts.length; i += 2) {
-    const x0 = pts[i - 2], y0 = pts[i - 1], L = Math.hypot(pts[i] - x0, pts[i + 1] - y0);
-    if (L >= left) { const t = left / (L || 1); out.push(x0 + (pts[i] - x0) * t, y0 + (pts[i + 1] - y0) * t); return out; }
-    out.push(pts[i], pts[i + 1]); left -= L;
-  }
-  return out;
+function cutPath(pts, max) { const w = walkTo(pts, max); return w ? pts.slice(0, w.i).concat(w.x, w.y) : pts.slice(); }
+// where your own ball would end up if it goes: a warning mark on its hole, or on the rim where it falls off
+function scratchMark(g, mine, path) {
+  if (mine.fell) { const q = toRim(path[path.length - 2], path[path.length - 1], 8); endMark(g, q.x, q.y, 7, COL.danger, true); }
+  else endMark(g, mine.pocket.x, mine.pocket.y, mine.pocket.r + 5, COL.danger, true);
 }
 let aimAlpha = 1;
 // what the guide is showing, eased between forecasts so ghosts glide instead of hopping
@@ -3443,8 +3855,7 @@ function drawAim(g) {
     const capped = preLen > maxLen;
     pathLineDots(g, { pts: cut, bounceAt: mine.bounceAt > 0 && mine.bounceAt <= cut.length ? mine.bounceAt : -1 }, scratchEarly ? DG : IV, 3.5, scratchEarly ? 0.9 : capped ? 0 : 0.8, c.r + 13);
     if (scratchEarly && preLen <= maxLen && grow >= 1) {
-      if (mine.fell) { const q = toRim(pre[pre.length - 2], pre[pre.length - 1], 8); endMark(g, q.x, q.y, 7, DG, true); }
-      else endMark(g, mine.pocket.x, mine.pocket.y, mine.pocket.r + 5, DG, true);
+      scratchMark(g, mine, pre);
     }
     const stopShown = !contact && !mine.pocket && !mine.fell && preLen <= maxLen;
     if (stopShown) {
@@ -3463,7 +3874,6 @@ function drawAim(g) {
       const ga = growE;
       circle(g, AV.cx, AV.cy, c.r); g.fillStyle = `rgba(244,237,220,${0.1 * ga})`; g.fill();
       g.lineWidth = 2.5 * PXW; g.strokeStyle = IV; g.globalAlpha = 0.9 * aimAlpha * ga; g.stroke(); g.globalAlpha = aimAlpha;
-      const nx = contact.ox - contact.x, ny = contact.oy - contact.y, nl = Math.hypot(nx, ny) || 1;
       if (isSpecial(o.ref) && !o.ref.used) {
         const sp = o.ref, info = { magnet: [PULL_R, 0, PULL_COL], frost: [FREEZE_R, 0, ICE_COL], midas: [0, 0, GOLD_COL], bomb: [BOMB_R, 0, DG] }[sp.kind];
         if (info[0] && (sp.kind !== 'bomb' || sp.count <= 1)) {
@@ -3488,7 +3898,7 @@ function drawAim(g) {
         const post = cutPath(mine.path.slice(mine.contactIdx - 2), 40 + 80 * (1 - f));
         const sc = (mine.pocket || mine.fell) && mine.potTick > contact.tick && polyLen(mine.path.slice(mine.contactIdx - 2)) <= 40 + 80 * (1 - f) + 1;
         dotPath(g, trimPath(post, -1, c.r + 4).pts, sc ? DG : IV, 0.6, sc ? 0.55 : 0.1, 12, 2.6);
-        if (sc) { if (mine.fell) { const q = toRim(mine.path[mine.path.length - 2], mine.path[mine.path.length - 1], 8); endMark(g, q.x, q.y, 7, DG, true); } else endMark(g, mine.pocket.x, mine.pocket.y, mine.pocket.r + 5, DG, true); }
+        if (sc) scratchMark(g, mine, mine.path);
       }
     }
   }
@@ -3514,9 +3924,10 @@ let tileScale = 0, tileTilt = false;
 // exactly the board at the cut, then squeezing harder inward. It's drawn as thin rings, each the
 // board scaled about the centre to fit.) Lit from the top-left like everything else: the near wall
 // under the top-left lip is in shadow. Every hole's inside is the same plain board; a special hole
-// shows its type only in the arc at its back (see drawArc).
+// shows its type only in the label above it (see holeLabel).
 const LIP = 0.22;                                       // (where a potted ball drops in, as a share of the radius)
 const HOLE_RINGS = 32, HOLE_DEPTH = 0.56, HOLE_PULL = 1.8;
+const HOLE_SOFT = 0.2;                                  // the share of the radius its edge fades over
 const holeM = new DOMMatrix();
 // The inside is the same every time for a given hole at a given scale, tilt and type, so it's drawn
 // once into a small image per hole and copied after that (a magnet or flashing hole is redrawn every
@@ -3526,7 +3937,7 @@ function drawShaft(g, p) {
   const key = `${sx.toFixed(3)}|${sy.toFixed(3)}|${LIFT}|${p.r}`;
   let c = p._shaft;
   if (!c || c.key !== key) {
-    const cv2 = (c && c.cv) || document.createElement('canvas');
+    const cv2 = (c && c.cv) || shaftPool.pop() || document.createElement('canvas');
     cv2.width = Math.max(1, Math.ceil(wd * sx)); cv2.height = Math.max(1, Math.ceil(wd * sy));
     const h = cv2.getContext('2d');
     h.setTransform(sx, 0, 0, sy, -x0 * sx, -y0 * sy);   // world coordinates, so the board lines up
@@ -3542,11 +3953,18 @@ function paintShaft(g, p) {
   g.fillStyle = '#000'; g.fill();
   if (LIFT > 0) tiltShaft(g, p, pat); else flatShaft(g, p, pat);
   circle(g, p.x, p.y, r); g.fillStyle = lampOf(g); g.fill();
+  circle(g, p.x, p.y, r); g.fillStyle = washPat(g); g.fill();
   // the near wall, under the top-left lip, is in shadow; the far wall faces the light
   const sh = g.createLinearGradient(p.x - r * 0.8, p.y - r * 0.8, p.x + r * 0.6, p.y + r * 0.6);
   sh.addColorStop(0, 'rgba(0,0,0,0.4)'); sh.addColorStop(0.6, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(255,255,255,0.05)');
   circle(g, p.x, p.y, r); g.fillStyle = sh; g.fill();
   g.restore();
+  // a soft edge: over the outer HOLE_SOFT of its radius the hole fades into the felt it's cut in (an
+  // ease, so the lip has no line at all), rather than stopping at a hard circle
+  const fe = g.createRadialGradient(p.x, p.y, r * (1 - HOLE_SOFT), p.x, p.y, r);
+  fe.addColorStop(0, '#000'); fe.addColorStop(0.45, 'rgba(0,0,0,0.8)'); fe.addColorStop(0.8, 'rgba(0,0,0,0.28)'); fe.addColorStop(1, 'rgba(0,0,0,0)');
+  g.globalCompositeOperation = 'destination-in'; g.fillStyle = fe; g.fillRect(p.x - r - 2, p.y - r - 2, 2 * r + 4, 2 * r + 4);
+  g.globalCompositeOperation = 'source-over';
 }
 // Straight down: an orthographic camera sees no wall at all, so the shaft is drawn as if seen down a
 // short lens: the wall closes in toward the middle the deeper it goes.
@@ -3585,66 +4003,72 @@ function tiltShaft(g, p, pat) {
 }
 // the lamp over the table: a touch brighter in the middle, falling off gently to a touch darker at
 // the edge, in world space (the holes' walls get it too, so they match the felt round them)
-// Grain, the way flat "fake 3D" motion design does it: the felt has a fine scatter of light and dark
-// specks, one screen pixel each (so it stays crisp at any zoom), and toward the table's darker edge
-// a dissolve stipple builds up: hard dark dots, thicker the deeper the shade, the way a Dissolve layer
-// through a feathered mask shades a shape. Both are baked into the table tiles with everything else.
-const GRAIN_PX = 256;
-const grainTex = (seed, fn) => {
-  const c = document.createElement('canvas'); c.width = c.height = GRAIN_PX;
-  const g = c.getContext('2d'), img = g.createImageData(GRAIN_PX, GRAIN_PX), d = img.data;
-  let s = seed; const rand = () => (s = s * 16807 % 2147483647) / 2147483647;
-  for (let i = 0; i < d.length; i += 4) { const v = fn(rand(), rand()); if (v) { d[i] = d[i + 1] = d[i + 2] = v[0]; d[i + 3] = v[1]; } }
-  g.putImageData(img, 0, 0); return c;
-};
-// fine grain: a few dark specks, fewer light ones, all faint
-const GRAIN_FINE = grainTex(7, (r, a) => r < 0.16 ? [0, 22 + a * 22] : r > 0.91 ? [255, 12 + a * 14] : null);
-// the stipple: hard dark dots, and a thin scatter of light ones so the shade still reads as felt
-const GRAIN_DOTS = grainTex(29, (r, a) => r < 0.3 ? [0, 70] : r > 0.97 ? [255, 26] : null);
-let grainTmp = null;
-function feltGrain(g) {
-  const T = g.getTransform(), cw = g.canvas.width, ch = g.canvas.height;
-  // pattern origin on the whole table's pixel grid, so the grain runs on unbroken from tile to tile
-  const at = p => { p.setTransform(new DOMMatrix([1, 0, 0, 1, ((T.e % GRAIN_PX) + GRAIN_PX) % GRAIN_PX, ((T.f % GRAIN_PX) + GRAIN_PX) % GRAIN_PX])); return p; };
-  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
-  g.fillStyle = at(g.createPattern(GRAIN_FINE, 'repeat')); g.fillRect(0, 0, cw, ch);
-  // the stipple only where the felt is in shade: kept by a feathered ring toward the rim (a tile
-  // entirely inside the ring's inner edge has none, and skips it)
-  const s = T.a, x0 = -T.e / s, y0 = -T.f / s, x1 = x0 + cw / s, y1 = y0 + ch / s;
-  const far = Math.hypot(Math.max(Math.abs(x0 - TC), Math.abs(x1 - TC)), Math.max(Math.abs(y0 - TC), Math.abs(y1 - TC)));
-  if (far < RT * 0.55) { g.restore(); return; }
-  if (!grainTmp || grainTmp.width !== cw || grainTmp.height !== ch) { grainTmp = document.createElement('canvas'); grainTmp.width = cw; grainTmp.height = ch; }
-  const h = grainTmp.getContext('2d');
-  h.globalCompositeOperation = 'source-over'; h.setTransform(1, 0, 0, 1, 0, 0); h.clearRect(0, 0, cw, ch);
-  h.fillStyle = at(h.createPattern(GRAIN_DOTS, 'repeat')); h.fillRect(0, 0, cw, ch);
-  h.globalCompositeOperation = 'destination-in'; h.setTransform(T);
-  const m = h.createRadialGradient(TC, TC, RT * 0.55, TC, TC, RT);
-  m.addColorStop(0, 'rgba(0,0,0,0)'); m.addColorStop(0.55, 'rgba(0,0,0,0.25)'); m.addColorStop(1, 'rgba(0,0,0,0.85)');
-  h.fillStyle = m; h.fillRect(TC - RT, TC - RT, RT * 2, RT * 2);
-  g.drawImage(grainTmp, 0, 0);
-  g.restore();
-}
+// The felt's paint: big stylised blotches of flat paint over the flat checkerboard, like a painted
+// backdrop. One slow, lumpy shape map is cut into a few flat tones: deep teal in its lows, then a band
+// that's blue in some parts of the table and sea green in others, then the felt itself, then a lighter
+// teal with pale tops, and the odd warm patch on its own. Each tone is flat, with a clean, soft
+// edge and no outline. It's one seamless image made at start-up (WASH_PX square, each pixel WASH_K
+// world units, so it repeats only every 2048), baked into the table tiles with everything else, so
+// it costs nothing per frame.
+const WASH_PX = 384, WASH_K = 2048 / 384;
+const washTex = (() => {
+  const N = WASH_PX, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'), img = g.createImageData(N, N), d = img.data;
+  let sd = 11; const rand = () => (sd = sd * 16807 % 2147483647) / 2147483647;
+  // value noise on an n × n lattice that wraps round (so the image tiles), smoothly in between
+  const layer = n => {
+    const v = Float32Array.from({ length: n * n }, rand), at = (a, b) => v[(((a % n) + n) % n) + (((b % n) + n) % n) * n];
+    return (x, y) => {
+      const fx = x * n, fy = y * n, i = Math.floor(fx), j = Math.floor(fy), u = fx - i, w = fy - j, su = u * u * (3 - 2 * u), sw = w * w * (3 - 2 * w);
+      return (at(i, j) * (1 - su) + at(i + 1, j) * su) * (1 - sw) + (at(i, j + 1) * (1 - su) + at(i + 1, j + 1) * su) * sw;
+    };
+  };
+  const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const S1 = layer(7), S2 = layer(15), H1 = layer(3), W1 = layer(8), WX = layer(6), WY = layer(6);
+  const E = 0.01;   // how soft a tone's edge is (in the shape map's own units: a pixel or two)
+  const up = (t, f) => ss(t - E, t + E, f);
+  // [r, g, b, a] for each tone
+  const DEEP = [4, 26, 38, 0.15], BLUE = [10, 46, 96, 0.13], GREEN = [16, 100, 82, 0.13], LIGHT = [64, 148, 160, 0.13], PALE = [214, 240, 242, 0.09], WARM = [226, 210, 160, 0.04];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    // the shape map is pushed about by a slower one, so the blotches curve and bulge instead of
+    // following the noise's grid
+    const u0 = x / N, v0 = y / N, u = u0 + (WX(u0, v0) - 0.5) * 0.09, v = v0 + (WY(u0, v0) - 0.5) * 0.09;
+    const f = S1(u, v) * 0.72 + S2(u, v) * 0.28, h = up(0.5, H1(u0, v0)), w = up(0.74, W1(u, v));
+    // how much of each tone is here: the bands cut out of the shape map (they add up to one)
+    const c0 = 1 - up(0.36, f), c1 = up(0.36, f) - up(0.47, f), c3 = up(0.61, f) - up(0.7, f), c4 = up(0.7, f);
+    let R = 0, G = 0, Bl = 0, A = 0;
+    const add = (P, k) => { const a = P[3] * k; R += P[0] * a; G += P[1] * a; Bl += P[2] * a; A += a; };
+    add(DEEP, c0); add(BLUE, c1 * (1 - h)); add(GREEN, c1 * h); add(LIGHT, c3); add(PALE, c4);
+    // a warm patch is laid over whatever's under it
+    if (w > 0) { const a = WARM[3] * w; R = R * (1 - a) + WARM[0] * a; G = G * (1 - a) + WARM[1] * a; Bl = Bl * (1 - a) + WARM[2] * a; A = A * (1 - a) + a; }
+    const k = (x + y * N) * 4;
+    if (A > 0) { d[k] = R / A; d[k + 1] = G / A; d[k + 2] = Bl / A; d[k + 3] = Math.min(255, A * 255); }
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+})();
+// the wash as a fill for a canvas drawing in world units
+function washPat(g) { const p = g.createPattern(washTex, 'repeat'); p.setTransform(new DOMMatrix([WASH_K, 0, 0, WASH_K, 0, 0])); return p; }
 function lampOf(g) {
   const lamp = g.createRadialGradient(TC, TC, 0, TC, TC, RT);
   lamp.addColorStop(0, 'rgba(255,255,255,0.06)'); lamp.addColorStop(0.5, 'rgba(255,255,255,0)'); lamp.addColorStop(1, 'rgba(0,0,0,0.14)');
   return lamp;
 }
-// no full outline: just an arc along the back of the cut (the far, top edge, where the felt turns
-// over into the wall), in the hole's colour: light felt for a plain hole, else its type's colour. Drawn
-// the same way as the Breaker's health arc: a round-capped line just outside the edge, over a darker
-// track, sweeping 0.8 of a half turn across the back. Its thickness and gap grow with the hole
-// (in proportion to a plain hole's 26), so a big hole's arc doesn't look thin.
-const HOLE_ARC_SPAN = Math.PI * 0.8, HOLE_ARC_GAP = 6, HOLE_ARC_R0 = 26;
-const arcCol = p => p.finish ? COL.gold : p.goal !== undefined ? TEAM_COL[p.goal] : p.mag ? '#6f9cff' : p.drain ? COL.danger : '#8fd0de';
-function drawArc(g, p) {
-  const k = p.r / HOLE_ARC_R0, rr = p.r + HOLE_ARC_GAP * k, a0 = -Math.PI / 2 - HOLE_ARC_SPAN / 2, a1 = -Math.PI / 2 + HOLE_ARC_SPAN / 2;
-  g.lineCap = 'round';
-  g.lineWidth = 4 * k; g.strokeStyle = 'rgba(0,0,0,0.45)'; g.beginPath(); g.arc(p.x, p.y, rr, a0, a1); g.stroke();
-  g.lineWidth = (p.flash > 0 ? 3.5 : 3) * k; g.strokeStyle = p.flash > 0 ? '#ffffff' : arcCol(p); g.beginPath(); g.arc(p.x, p.y, rr, a0, a1); g.stroke();
-  g.lineCap = 'butt';
+// No colour on a hole: a special one says what it does in a small label above it (holeLabel; plain
+// holes have none), drawn upright on the screen with the floating numbers.
+// (a points multiplier is the token and ×N; `tok` says so)
+function holeLabel(p) {
+  HL.tok = false;
+  if (p.finish) return 'FINISH';
+  if (p.goal !== undefined) return `${TEAM_NAME[p.goal].toUpperCase()} GOAL`;
+  const mult = MODE === 'party' ? (p.hot && party.phase === 'play' && curRound()?.kind === 'hot' ? 3 : 1) : p.base + p.boost;
+  if (p.mag) return mult > 1 ? `MAGNET ×${mult}` : 'MAGNET';
+  if (mult > 1) { HL.tok = true; return `×${mult}`; }
+  return '';
 }
-// the whole hole
-function drawHole(g, p) { drawShaft(g, p); drawArc(g, p); }
+const HL = { tok: false };
+// the whole hole, in the table's tiles
+const drawHole = drawShaft;
 function drawStaticLayer(g, x0, y0, x1, y1) {
   const near = (x, y, m) => x > x0 - m && x < x1 + m && y > y0 - m && y < y1 + m;
   // The table is flat: a checkered felt disc right up to a dark outline, and nothing past it but the sky.
@@ -3659,13 +4083,13 @@ function drawStaticLayer(g, x0, y0, x1, y1) {
     g.fillStyle = g.createPattern(feltTex, 'repeat'); g.fillRect(x0, y0, x1 - x0, y1 - y0);
     // a subtle light over the board itself, fixed to the table like a lamp hanging over its middle
     g.fillStyle = lampOf(g); g.fillRect(x0, y0, x1 - x0, y1 - y0);
-    feltGrain(g);
+    g.fillStyle = washPat(g); g.fillRect(x0, y0, x1 - x0, y1 - y0);
     g.restore();
   }
   // the edge itself: a dark outline in the felt's own colour, like the balls have
   if (rim) { g.lineWidth = 3; g.strokeStyle = '#0a2229'; circle(g, TC, TC, RT + 0.5); g.stroke(); }
   for (const p of pockets) {
-    if (!near(p.x, p.y, p.r * (1 + HOLE_ARC_GAP / HOLE_ARC_R0) + 6) || edgeDist(p.x, p.y) < p.r * 0.5) continue;
+    if (!near(p.x, p.y, p.r * 1.3 + 6) || edgeDist(p.x, p.y) < p.r * 0.5) continue;
     drawHole(g, p);
   }
   // cushions as raised blocks: a soft cast shadow down-right, a darker front face, then the top
@@ -3692,6 +4116,14 @@ function drawStaticLayer(g, x0, y0, x1, y1) {
 const TILE_MS = 4;
 let tileSpent = 0, tileFrame = -1;
 const tilePool = [];
+// the table changed: every built tile goes back to the pool to be drawn over, rather than being left
+// for the browser to free (phones cap how much canvas memory a page can hold, and past it new
+// canvases draw blank)
+let tileGen = 0;
+function dropTiles() { for (const t of tileCache.values()) tilePool.push(t); tileCache.clear(); tileGen++; }
+// holes or cushions moved: the collision grid and every tile are out of date
+function tableChanged() { buildStaticGrid(); dropTiles(); }
+const shaftPool = [];
 function getTile(tx, ty) {
   const key = (tx + 4) + (ty + 4) * 64;
   let t = tileCache.get(key);
@@ -3702,7 +4134,7 @@ function getTile(tx, ty) {
   const t0 = performance.now();
   const px = Math.round(TILE * tileScale);
   t = tilePool.pop() || document.createElement('canvas');
-  if (t.width !== px || t.height !== px) { t.width = px; t.height = px; }
+  sizeTo(t, px, px);
   const g = t.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.setTransform(tileScale, 0, 0, tileScale, -tx * px, -ty * px);
@@ -3712,18 +4144,34 @@ function getTile(tx, ty) {
   tileSpent += performance.now() - t0;
   return t;
 }
-let stubPat = null, stubScale = 0;
+let stubPat = null, stubWash = null, stubScale = 0;
 // Below the table: open sky, one flat colour. It's a page element behind the game canvas, so the
 // canvas only has to clear the pixels outside the table.
-const skyEl = document.getElementById('sky');
-let skyOn = false;
-function drawVoid(sc, tx, ty) {
-  // how close the edge is to the screen: no point showing the sky in the middle of the table
-  const cd = Math.hypot(cam.x - TC, cam.y - TC), reach = Math.hypot(VW, VH) / 2 / ZOOM, show = cd + reach >= RT - 10;
-  if (show !== skyOn) { skyOn = show; skyEl.hidden = !show; }
-  if (!show) return;
-  // the canvas is see-through wherever the table is not
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+// The felt: a still picture of the table (and the sky past its edge) a little bigger than the screen,
+// slid under it every frame with a CSS transform, which is about the cheapest thing a browser can do
+// (nothing is drawn, the compositor just moves it). It's drawn again only when the view has slid past
+// its margin, the zoom, tilt, size or table has changed, or a tile it wanted wasn't built yet. It's
+// opaque, so nothing under it is ever blended.
+function feltLayer(tx, ty) {
+  const m = Math.round(FELT_M * DPR), key = `${tileScale}|${KY}|${cv.width}|${cv.height}|${tileGen}`;
+  let dx = tx - felt.tx, dy = ty - felt.ty;
+  if (felt.dirty || key !== felt.key || Math.abs(dx) > m - 2 || Math.abs(dy) > m - 2) {
+    felt.key = key; felt.tx = tx; felt.ty = ty; felt.dirty = false; dx = dy = 0;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = SKY_COL; ctx.fillRect(0, 0, cv.width, cv.height);
+    drawTiles(tx + m, ty + m);
+  }
+  const css = `translate3d(${(dx - m) / DPR}px,${(dy - m) / DPR}px,0)`;
+  if (css !== felt.css) { felt.css = css; cv.style.transform = css; }
+}
+// the table's moving marks (magnets' pull, a hole lighting up, gold being drawn in, an eruption, a
+// party round's markings) go on their own see-through layer, switched off entirely on frames without
+let marksOn = false;
+function needMarks() {
+  for (const m of pullers) if (!m.dead && inView(m.x, m.y, PULL_R)) return true;
+  for (const q of pendingLoot) if (q.p && inView(q.p.x, q.p.y, 80)) return true;
+  for (const e of erupts) if (inView(e.x, e.y, 200)) return true;
+  for (const p of pockets) if (p.mag && inView(p.x, p.y, 80)) return true;
+  return MODE === 'party' && party.phase !== 'off' && party.phase !== 'podium' && party.phase !== 'lobby';
 }
 // copy the visible tiles; ox, oy = where world (0,0) lands in device pixels (whole pixels)
 function drawTiles(ox, oy) {
@@ -3734,9 +4182,11 @@ function drawTiles(ox, oy) {
     if (tx < -1 || ty < -1 || tx * TILE > WW + 60 || ty * TILE > WH + 60) continue;
     const t = getTile(tx, ty);
     if (t) { ctx.drawImage(t, ox + tx * px, oy + ty * py, px, py); continue; }
-    // not built yet: plain felt in its place, lined up with the real checkers
-    if (!stubPat || stubScale !== tileScale) { stubPat = ctx.createPattern(feltTex, 'repeat'); stubScale = tileScale; }
-    ctx.save(); ctx.setTransform(tileScale, 0, 0, tileScale * KY, ox, oy); ctx.fillStyle = stubPat; ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE); ctx.restore();
+    // not built yet: plain felt in its place, wash and all, lined up with the real thing (and the felt
+    // picture gets drawn again next frame, to take the real one once it's there)
+    felt.dirty = true;
+    if (!stubPat || stubScale !== tileScale) { stubPat = ctx.createPattern(feltTex, 'repeat'); stubWash = washPat(ctx); stubScale = tileScale; }
+    ctx.save(); ctx.setTransform(tileScale, 0, 0, tileScale * KY, ox, oy); ctx.fillStyle = stubPat; ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE); ctx.fillStyle = stubWash; ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE); ctx.restore();
   }
 }
 
@@ -3762,15 +4212,21 @@ function drawXray(g) {
 }
 let leader = null;
 // the top scorer on the table, if anyone has scored
-function findLeader() { let top = null; for (const p of players) if (p.alive && (!top || p.score > top.score)) top = p; return top && top.score > 0 ? top : null; }
+function findLeader() {
+  if (MODE === 'party' && (party.phase === 'play' || party.phase === 'intro') && curRound()?.kind === 'crown') return null;   // (the crowns are the crowns)
+  let top = null; for (const p of players) if (p.alive && (!top || p.score > top.score)) top = p; return top && top.score > 0 ? top : null; }
 // a soft halo: full strength under the ball's own edge, then an eased fall-off to nothing, so it
 // reads as light spilling onto the felt rather than a disc. `edge` is where the ball's rim sits (0..1).
 function glowSprite(r, g0, b, edge) {
-  const c = document.createElement('canvas'); c.width = c.height = 128;
-  const g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
   const st = [[0, 1], [edge, 1], [edge + (1 - edge) * 0.25, 0.42], [edge + (1 - edge) * 0.55, 0.14], [1, 0]];
-  for (const [t, a] of st) gr.addColorStop(Math.min(1, t), `rgba(${r},${g0},${b},${a})`);
-  g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return c;
+  return radialSprite(128, st.map(([t, a]) => [Math.min(1, t), `rgba(${r},${g0},${b},${a})`]));
+}
+// a square sprite of a radial gradient from the middle out: stops as [where 0..1, colour]
+function radialSprite(px, stops) {
+  const c = document.createElement('canvas'); c.width = c.height = px;
+  const g = c.getContext('2d'), h = px / 2, gr = g.createRadialGradient(h, h, 0, h, h, h);
+  for (const [t, col] of stops) gr.addColorStop(t, col);
+  g.fillStyle = gr; g.fillRect(0, 0, px, px); return c;
 }
 const GLOW_LOOT = glowSprite(255, 196, 64, 1 / 2.1), GLOW_GOLD = glowSprite(255, 206, 60, 1 / 2.4), GLOW_ICE = glowSprite(225, 244, 255, 1 / 1.9);
 // the gold glint: two crossed thin diamonds, s across
@@ -3803,12 +4259,7 @@ function pullRings(g, x, y, r0, rate) {
   }
   g.restore();
 }
-const DIP_IMG = (() => {
-  const c = document.createElement('canvas'); c.width = c.height = 64;
-  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.55, 'rgba(0,0,0,0.85)'); gr.addColorStop(0.75, 'rgba(0,0,0,0.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return c;
-})();
+const DIP_IMG = radialSprite(64, [[0, 'rgba(0,0,0,1)'], [0.55, 'rgba(0,0,0,0.85)'], [0.75, 'rgba(0,0,0,0.35)'], [1, 'rgba(0,0,0,0)']]);
 const LEAD_COL = COL.gold;
 const CROWN_SVG = '<svg class="crown" viewBox="0 0 20 13" aria-hidden="true"><path d="M1 12V2.5l5 5L10 1l4 6.5 5-5V12z" style="fill:var(--gold)" stroke="rgba(0,0,0,.5)" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 // ice on frozen balls, in screen space (the ball shader draws the ice; this is only the flat fallback)
@@ -3848,7 +4299,7 @@ function render() {
   let sx = 0, sy = 0; if (shake > 0 && !REDUCE) { sx = (Math.random() - 0.5) * shake * 16; sy = (Math.random() - 0.5) * shake * 16; }
   const z = ZOOM;
   const sc = DPR * z;
-  if (sc !== tileScale || tiltOn !== tileTilt) { for (const t of tileCache.values()) tilePool.push(t); tileCache.clear(); tileScale = sc; tileTilt = tiltOn; }
+  if (sc !== tileScale || tiltOn !== tileTilt) { dropTiles(); tileScale = sc; tileTilt = tiltOn; }
   frameN++;
   // vertical squash snapped so tiles stay whole pixels
   const tpx = Math.round(TILE * sc);
@@ -3858,58 +4309,42 @@ function render() {
   RX = tx; RY = ty;
 
   gatherVis(); PXW = 0.75 / ZOOM;
-  drawVoid(sc, tx, ty);
-  // ---- table layer: cached tiles, then the parts that change ----
-  drawTiles(tx, ty);
+  // ---- table layer: the still felt picture, slid into place ----
+  feltLayer(tx, ty);
+  for (const p of pockets) { p.vpx = 0; p.vpy = p.r * (1 - LIP) * 0.6 * LIFT; }   // (potted balls drop straight down the shaft, which tilted is slightly lower)
+  // ---- the marks layer: only on frames that have any (always, without WebGL: the balls go there too) ----
+  // (shadows, dents, glows and particles are instanced on the balls' canvas; the 2D ones are the fallback)
+  const flat2d = !sprGL, marks = flat2d || !gl || needMarks();
+  if (marks !== marksOn) { marksOn = marks; mcv.hidden = !marks; }
+  if (marks) {
+  const ctx = kctx;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, mcv.width, mcv.height);
   ctx.setTransform(sc, 0, 0, sc * KY, tx, ty);
   for (const p of pockets) if (p.mag && inView(p.x, p.y, MAGNET_R)) pullRings(ctx, p.x, p.y, MAGNET_R, 0.5);
   for (const m of pullers) if (!m.dead && inView(m.x, m.y, PULL_R)) pullRings(ctx, m.x, m.y, PULL_R, 0.8);
-  for (let i = 0; i < vis.length; i++) {
+  if (flat2d) for (let i = 0; i < vis.length; i++) {
     const b = vis[i]; if (b.kind !== 'midas' || !(b.goldT > time)) continue;
     sprite(ctx, GLOW_GOLD, b.x, b.y, b.r * 2.4, (0.42 + 0.06 * Math.sin(time * 3)) * Math.min(1, b.goldT - time));
   }
   ctx.globalAlpha = 1;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  for (const p of pockets) {
-    if (!inView(p.x, p.y, 80)) continue;
-    // potted balls drop straight down the shaft, which on a tilted screen means slightly lower
-    p.vpx = 0; p.vpy = p.r * (1 - LIP) * 0.6 * LIFT;
-    if (p.flash > 0 || p.mag) drawHole(ctx, p);
-    if (p.boost) text(ctx, `×${p.base + p.boost}`, p.x, p.y + p.r + 14, 15, COL.brass);
-  }
   // heavy cue balls press into the cloth: a soft dark dip that widens and darkens with mass
   // (one small image made at start-up, stretched and faded per ball: no gradients per frame)
-  for (let i = 0; i < vis.length; i++) {
+  if (flat2d) for (let i = 0; i < vis.length; i++) {
     const b = vis[i], h = heft(b); if (h < 0.04) continue;
     sprite(ctx, DIP_IMG, b.x, b.y, b.r * (1.3 + 1.1 * h), (0.15 + 0.45 * h) * ballAlpha(b));
   }
   ctx.globalAlpha = 1;
   // ball shadows and armed-bomb glow sit on the felt
-  // (resting, plain balls go into one path and one fill; only squashed or faded ones are drawn alone)
-  const plain = b => (b.d0 ?? 1) === 1 && !(b.d1) && (b.d2 ?? 1) === 1 && b.kind !== 'cue' && b.fade === undefined;
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath();
-  for (let i = 0; i < vis.length; i++) {
-    const b = vis[i];
-    if (plain(b)) { ctx.moveTo(b.x + b.r * 1.24, b.y + b.r * 0.3); ctx.arc(b.x + b.r * 0.22, b.y + b.r * 0.3, b.r * 1.02, 0, TAU); }
-  }
-  ctx.fill();
-  for (let i = 0; i < vis.length; i++) {
-    const b = vis[i]; if (plain(b)) continue;
-    const m00 = b.d0 ?? 1, m01 = b.d1 ?? 0, m11 = b.d2 ?? 1;
-    const ang = 0.5 * Math.atan2(2 * m01, m00 - m11), mid = (m00 + m11) / 2, rad = Math.hypot((m00 - m11) / 2, m01);
-    const h = b.kind === 'cue' ? heft(b) : 0, tuck = 1 - 0.45 * h;
-    ctx.globalAlpha = ballAlpha(b) * (1 + 0.9 * h);
-    ctx.beginPath(); ctx.ellipse(b.x + b.r * 0.22 * tuck, b.y + b.r * 0.3 * tuck, b.r * (mid + rad) * 1.02, b.r * (mid - rad) * 0.98, ang, 0, TAU); ctx.fill();
-    ctx.globalAlpha = 1;
-  }
+  if (flat2d) drawShadows(ctx, vis);
   drawWindup(ctx); drawEruptFelt(ctx); drawPartyFelt(ctx);
-  for (let i = 0; i < vis.length; i++) {
+  if (flat2d) for (let i = 0; i < vis.length; i++) {
     const b = vis[i];
     if (b.frozenT > time) sprite(ctx, GLOW_ICE, b.x, b.y, b.r * 1.9, 0.3 + 0.25 * Math.max(0, b.ice || 0));
     if (b.kind === 'loot') sprite(ctx, GLOW_LOOT, b.x, b.y, b.r * 2.1 * popS(b), 0.34 + 0.05 * Math.sin(time * 2.2 + b.id));
     else if (b.kind === 'bomb' && b.count <= 1) { ctx.globalAlpha = 1; circle(ctx, b.x, b.y, b.r + 6 + Math.sin(time * 14) * 2); ctx.fillStyle = 'rgba(236,106,61,0.4)'; ctx.fill(); }
     ctx.globalAlpha = 1;
+  }
   }
 
   // ---- ball layer ----
@@ -3928,7 +4363,7 @@ function render() {
   else if (ghost) { if (drag && dragAim()) drawGhostAim(g); drawDragOrigin(g); }
   drawTells(g);
   drawChips(g);
-  for (let i = 0; i < vis.length; i++) { const b = vis[i]; if (b.kind === 'loot') glints(g, b, 2, 0.8); else if (b.kind === 'midas' && b.goldT > time) glints(g, b, 3, 0.9); }
+  if (flat2d) for (let i = 0; i < vis.length; i++) { const b = vis[i]; if (b.kind === 'loot') glints(g, b, 2, 0.8); else if (b.kind === 'midas' && b.goldT > time) glints(g, b, 3, 0.9); }
   for (const p of players) { if ((p.isBot || p.remote || p.netAim) && p.alive && p.windup && inView(p.ball.x, p.ball.y)) drawCue(g, p.ball, p.windup.dx, p.windup.dy, p.windup.pow * clamp(1 - p.windup.t / (p.windup.t0 || 1), 0, 1), '#6b4a2e'); }
   g.textAlign = 'center'; g.textBaseline = 'middle';
   if (breaker && !breaker.dead && inView(breaker.x, breaker.y, 60)) drawBreaker(g, breaker);
@@ -3939,7 +4374,7 @@ function render() {
     if (p === leader) { drawCrown(g, p.ball.x, p.ball.y - p.ball.r - 29, 13, LEAD_COL); g.globalAlpha = 1; }
     label(g, p.name, 12, p === leader ? LEAD_COL : '#ffffff', p.ball.x, p.ball.y - p.ball.r - 13);
   }
-  if (MODE === 'party' && party.phase === 'play') curRound().air?.(g);
+  if (MODE === 'party' && party.phase === 'play') curRound()?.air?.(g);
   if (ghost && !(drag && dragAim())) { g.globalAlpha = GHOST_A; label(g, 'Ghost', 12, '#ffffff', ghost.x, ghost.y - ghost.r - 13); g.globalAlpha = 1; }
   if (me.alive && me.ball.frozenT > time) {
     const b = me.ball, o = 4 * Math.sin(time * 14), d = b.r + 12, h = 6;
@@ -3948,12 +4383,8 @@ function render() {
     g.lineCap = 'butt';
   }
   // short warnings appear under your own ball instead of in a status bar
-  if (flashMsg && me.alive) {
-    g.globalAlpha = Math.min(1, flashMsg.t * 3);
-    label(g, flashMsg.text, 12, '#ffffff', me.ball.x, me.ball.y + me.ball.r + 16);
-    g.globalAlpha = 1;
-  }
-  for (const q of particles) {
+
+  if (flat2d) for (const q of particles) {
     const k = q.life / q.max;
     if (q.ring) { g.lineWidth = 4 * k; g.globalAlpha = k; g.strokeStyle = q.color; circle(g, q.x, q.y, q.r1 + (q.r0 - q.r1) * k); g.stroke(); g.globalAlpha = 1; continue; }
     if (q.snow) {    // a soft white flake that melts away
@@ -3982,11 +4413,22 @@ function render() {
   }
   g.globalAlpha = 1;
   drawEruptAir(g);
-  for (const f of floats) {
-    const k = f.life / f.max; g.globalAlpha = Math.min(1, k * 2);
-    outlined(g, f.text, f.x, f.y - (1 - k) * 30, `700 ${f.size}px ${FONT}`, f.color, 'rgba(11,22,27,0.8)');
+  drawHoleLabels(g);
+  if (floats.length) {
+    // upright on the screen: the table's transform only places them
+    const m = g.getTransform(); g.textAlign = 'left';
+    for (const f of floats) {
+      const half = f.max * 0.5;
+      let sq = 0, gr = 1, up = 0;
+      // the tap's springs (lift in the menu's px, scaled to the number's size), on top of the rise
+      if (!REDUCE) { sq = clamp(f.sq, UI.SQ_MIN, UI.SQ_MAX); gr = 1 + TAP_GROW * f.lift; up = f.rise * (1 - 2 ** (-10 * Math.min(1, f.age / half))) + MENU.LIFT_PX * f.lift * f.size / 18; }
+      g.globalAlpha = f.t < half ? 1 : Math.max(0, 1 - (f.t - half) / half);
+      const k = m.a * gr;
+      g.setTransform(k * (1 + sq), 0, 0, k * (1 - sq), m.a * f.x + m.e, m.d * f.y + m.f - up * m.a);
+      drawFloat(g, f);
+    }
+    g.setTransform(m); g.textAlign = 'center'; g.globalAlpha = 1;
   }
-  g.globalAlpha = 1;
   drawEdgeHoles(g);
   drawFlyers(g);
   drawSpotlight(sc, tx, ty);
@@ -4007,7 +4449,7 @@ function drawSpotlight(sc, tx, ty) {
   if (spotFx.hidden === show) { spotFx.hidden = spotBalls.hidden = !show; deathEl.classList.toggle('lit', show); }
   if (!show) return;
   const W = Math.max(1, Math.round(VW * DPR)), H = Math.max(1, Math.round(VH * DPR));
-  for (const c of [spotFx, spotBalls]) if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  sizeTo(spotFx, W, H); sizeTo(spotBalls, W, H);
   const g = spotG;
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
   // the same scrim as .overlay.pscreen: an ellipse 90% × 70% of the screen, centred at 50% 55%
@@ -4017,7 +4459,7 @@ function drawSpotlight(sc, tx, ty) {
   sg.addColorStop(0, 'rgba(4,13,17,.72)'); sg.addColorStop(0.55, 'rgba(4,13,17,.84)'); sg.addColorStop(1, 'rgba(4,13,17,.93)');
   g.fillStyle = sg; g.fillRect(-rx * 2, -rx * 2, rx * 4, rx * 4);
   g.setTransform(sc, 0, 0, sc * KY, tx, ty);
-  for (const b of spotList) sprite(g, GLOW_LOOT, b.x, b.y, b.r * 2.6 * popS(b), 0.55 + 0.08 * Math.sin(time * 2.2 + b.id));
+  for (const b of spotList) sprite(g, GLOW_LOOT, b.x, b.y, b.r * 1.9 * popS(b), 0.26 + 0.04 * Math.sin(time * 2.2 + b.id));   // (a soft light, not a blaze)
   g.globalAlpha = 1;
   g.setTransform(sc, 0, 0, sc * KY, tx, ty - R * LIFT * sc);
   for (const b of spotList) label(g, b.value, 14, LOOT_COL, b.x, b.y - b.r - 13);
@@ -4283,7 +4725,7 @@ function update(dt) {
       if (p.isBot) botThink(p, dt);
     } else {
       p.respawnT -= dt;
-      if (p.respawnT <= 0 && (p.isBot || started)) { spawnPlayer(p); if (p === me) { deathEl.hidden = true; deathPos = null; } }
+      if (p.respawnT <= 0 && (p.isBot || started)) { spawnPlayer(p); if (p === me) { uiHide(deathEl); deathPos = null; } }
     }
   }
   for (const p of pockets) p.flash = Math.max(0, p.flash - dt * 3);
@@ -4311,7 +4753,7 @@ function update(dt) {
     if (q.life <= 0) { particles.splice(i, 1); continue; }
     if (!q.ring) { const k = q.snow ? SNOW_DRAG : BIT_DRAG; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= k; q.vy *= k; }
   }
-  for (let i = floats.length - 1; i >= 0; i--) { floats[i].life -= dt; if (floats[i].life <= 0) floats.splice(i, 1); }
+  for (let i = floats.length - 1; i >= 0; i--) { const f = floats[i]; f.t += dt; f.age += dt; tapSprings(f, 0, Math.min(dt, UI.DT_MAX)); if (f.t >= f.max) floats.splice(i, 1); }
   shake = Math.max(0, shake - dt * 2);
   if (ghost) ghostUpdate(dt);
   if (!client) fireQueued();
@@ -4342,13 +4784,19 @@ if (leader) { cam.x = leader.ball.x; cam.y = leader.ball.y; }
 
 // ---------- modes ----------
 // Arena: the open table, 14 bots, play as long as you like.
-// Party: you and 7 others play the games you picked, one short round each, every round with one
-//   twist; places in a round earn party points, and a podium closes it out.
+// Party: you, any friends, and as many bots as you pick (7 to start) play the games you picked, one
+//   short round each, every round with one twist; places in a round earn party points, and a podium
+//   closes it out.
+// (PARTY_BOTS is the bot count you start with; PARTY_PTS runs out at 8th, so past that a place scores 0)
 // Debug: an empty table with a panel for spawning anything, toggles and live performance numbers.
 const PARTY_PTS = [10, 7, 5, 4, 3, 2, 1, 0], PARTY_BOTS = 7, PARTY_RESPAWN = 1.5, INTRO_T = 3.2, RESULT_T = 4;
 const HILL_R = 230, KO_PTS = 3, SHRINK_EVERY = 15, SHRINK_BY = 170;
 const POTATO_FUSE = [11, 17], POTATO_PASS_V = 60, POTATO_WAIT = 2, POTATO_COL = '#ff6a2b';
 const WASH_A = 0.6, ZOMBIE_COL = '#76d35a', BITE_PTS = 5, BITE_V = 40, ZOMBIE_SCARE = 420;
+// Crown: this share of the table starts crowned (at least one); a bump this hard steals one; after a
+// crown changes hands neither side can take it for CROWN_SAFE s; crowns shoot a little harder but
+// reload slower; a steal pays, and double with under CROWN_LAST s left ("by technicality")
+const CROWN_SHARE = 0.13, CROWN_V = 45, CROWN_SAFE = 1.5, CROWN_POW = 1.15, CROWN_RELOAD = 1.4, CROWN_PTS = 3, CROWN_LAST = 3, CROWN_SCARE = 480;
 const TEAM_COL = ['#3b82f6', '#ef4444'], TEAM_NAME = ['Blue', 'Red'];
 const GOAL_R = 46, GOAL_IN = 230, GOAL_PTS = 5, SOCCER_R = 22, SOCCER_M = 0.8, BALL_BACK = 1.2;
 // capture the flag: bases this far in from each side; a touch this close grabs a flag; a bump this hard
@@ -4417,7 +4865,7 @@ function flee(p, x, y, pow) {
   return steer(p, TC, TC, 200, 0.5);
 }
 const nearestBall = (p, list) => nearest(list.map(o => o.ball), p.ball.x, p.ball.y);
-// ---- the team rounds: you and three bots in blue, four bots in red; blue plays on the left ----
+// ---- the team rounds: blue against red, blue on the left ----
 // The people split as evenly as they go (you're always blue; with friends, they end up on both
 // sides), then the bots fill in so the teams come out the same size, or one apart.
 function makeTeams() {
@@ -4436,19 +4884,32 @@ const teamWash = p => TEAM_COL[teamOf(p)];
 const teamSpawn = p => { const side = teamOf(p) ? 1 : -1; return freeSpot(R, { near: { x: TC + side * rnd(250, 650), y: TC + rnd(-450, 450), r: 10 }, pocketGap: 60 }); };
 // winners' team first, each team by score; a draw is just by score
 const teamPlace = win => win < 0 ? players.slice().sort(byScore) : mates(win).sort(byScore).concat(mates(1 - win).sort(byScore));
-const teamScore = (a, b) => `<b style="color:${TEAM_COL[0]}">Blue ${a}</b> – <b style="color:${TEAM_COL[1]}">${b} Red</b>`;
-// a round that needs room clears the holes and cushions near its spots, and puts them back after
-function clearLayout(spots, m, extra = []) {
+const teamScore = ([a, b]) => `<b style="color:${TEAM_COL[0]}">Blue ${a}</b> – <b style="color:${TEAM_COL[1]}">${b} Red</b>`;
+const teamLine = ([a, b]) => `Blue ${a} – ${b} Red`;
+// the team ahead on these two scores (-1 for a draw), and everyone placed by it
+const teamAhead = ([a, b]) => a === b ? -1 : a > b ? 0 : 1;
+const placeBy = s => teamPlace(teamAhead(s));
+// a team's big moment: the word to everyone, a burst in their colour, a ting for their side
+function teamFx(u, text, x, y, big) {
+  noticeAll(text, big ? 2200 : 1400);
+  fxAll(x, y, big ? 40 : 24, TEAM_COL[u], '#ffffff', big ? 0.4 : 0);
+  sfxTing(x, y, teamOf(me) === u);
+}
+// what every team round shares
+const TEAM_ROUND = { teams: true, botFocus: 12, spawn: teamSpawn, wash: teamWash, end: () => restoreLayout() };
+// a round that needs room clears the holes (and cushions, within segM) near its spots, and anything
+// `keep` turns down, adds its own holes, and puts it all back after
+function clearLayout(spots, m, extra = [], segM = m, keep = () => true) {
   party.saved = [pockets.splice(0), segs.splice(0)];
-  const ok = (x, y) => spots.every(q => Math.hypot(x - q.x, y - q.y) > m);
-  pockets.push(...extra, ...party.saved[0].filter(p => ok(p.x, p.y)));
-  segs.push(...party.saved[1].filter(s => ok((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2)));
-  buildStaticGrid(); tileCache.clear();
+  const ok = (x, y, r) => keep(x, y) && spots.every(q => Math.hypot(x - q.x, y - q.y) > r);
+  pockets.push(...extra, ...party.saved[0].filter(p => ok(p.x, p.y, m)));
+  segs.push(...party.saved[1].filter(s => ok((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2, segM)));
+  tableChanged();
 }
 function restoreLayout() {
   if (!party.saved) return;
   pockets.length = 0; pockets.push(...party.saved[0]); segs.length = 0; segs.push(...party.saved[1]); party.saved = null;
-  buildStaticGrid(); tileCache.clear();
+  tableChanged();
 }
 // a round can change how hard a player shoots (the flag carrier is slowed); the aim guide uses it too
 function powK(p) { if (MODE !== 'party' || party.phase !== 'play') return 1; const r = curRound(); return r && r.pow ? r.pow(p) : 1; }
@@ -4492,7 +4953,7 @@ const ROUNDS = {
     update(dt) { party.hotT -= dt; if (party.hotT <= 0) { moveHot(); noticeAll('The hot hole moved'); } },
     end() { for (const pk of pockets) pk.hot = false; party.hot = null; },
     bar: () => `Moves in ${Math.max(0, Math.ceil(party.hotT))}s`,
-    felt(g) { const p = party.hot; if (p) { const k = 0.5 + 0.5 * Math.sin(time * 6); g.lineWidth = 3; g.strokeStyle = LOOT_COL; g.globalAlpha = 0.6 + 0.4 * k; circle(g, p.x, p.y, p.r + 5 + 3 * k); g.stroke(); g.globalAlpha = 1; } }
+    felt(g) { if (party.hot) ringOn(g, party.hot, LOOT_COL, 3, 5, 6); }
   },
   shrink: {
     name: 'Last Ball Standing', short: 'The table shrinks, stay on', T: 90, elim: true, botMix: { pots: 0.15, fights: 1.1 },
@@ -4514,7 +4975,7 @@ const ROUNDS = {
       if (ed >= danger) return null;
       const s = steer(p, TC, TC, Math.min(Math.hypot(c.x - TC, c.y - TC) * 0.6, danger + 150), 0.7); s.urgent = !!party.warnR; return s;
     },
-    felt(g) { if (party.warnR) { const k = 0.5 + 0.5 * Math.sin(time * 9); g.save(); g.lineWidth = 4; g.strokeStyle = 'rgb(236,106,61)'; g.globalAlpha = 0.5 + 0.45 * k; circle(g, TC, TC, party.warnR); g.stroke(); g.restore(); } }
+    felt(g) { if (party.warnR) ringOn(g, { x: TC, y: TC, r: party.warnR }, COL.danger, 4, 0, 9); }
   },
   potato: {
     name: 'Hot Potato', short: 'Bump to pass it before it blows', T: 150, elim: true, botMix: { pots: 0.1, fights: 0 },
@@ -4567,14 +5028,14 @@ const ROUNDS = {
     down(v, killer, edge) {
       const human = !party.zombies.has(v); party.zombies.add(v); v.respawnT = PARTY_RESPAWN;
       if (human && killer && party.zombies.has(killer)) award(killer, BITE_PTS, party.koAt.x, party.koAt.y, `GOT ${v.name.toUpperCase()}`);
-      cardFor(v, human ? 'You turned' : edge ? 'You fell off' : 'You scratched', human ? 'You come back as a zombie<br>' : '');
+      cardFor(v, human ? 'Bitten!' : edge ? 'Fell off!' : 'Scratched!', human ? 'You’re a zombie now' : '');
       return true;
     },
     wash: p => party.zombies.has(p) ? ZOMBIE_COL : null,
     foe: (p, q) => party.zombies.has(p) !== party.zombies.has(q),
     place() { const z = party.zombies; return players.filter(p => !z.has(p)).sort(byScore).concat(players.filter(p => z.has(p)).sort(byScore)); },
     plan(p) {
-      const z = party.zombies, c = p.ball;
+      const z = party.zombies;
       if (z.has(p)) { const t = nearestBall(p, alivePlayers().filter(o => !z.has(o))); return t && t.d < botView(p) * 1.6 ? steer(p, t.o.x, t.o.y, t.d + 150, 0.9) : steer(p, TC, TC, 250, 0.4); }
       const t = nearestBall(p, alivePlayers().filter(o => z.has(o)));
       return t && t.d < ZOMBIE_SCARE ? { ...flee(p, t.o.x, t.o.y, 0.55), urgent: t.d < ZOMBIE_SCARE * 0.6 } : null;
@@ -4582,20 +5043,63 @@ const ROUNDS = {
     bar: () => { const n = players.filter(p => !party.zombies.has(p)).length; return `${n} human${n === 1 ? '' : 's'} left`; },
     summary: () => { const n = players.filter(p => !party.zombies.has(p)).length; return n ? `${n} survived` : 'Nobody survived'; }
   },
+  crown: {
+    name: 'Crown', short: 'Steal a crown, wear it at the end', T: 60, botMix: { pots: 0.1, fights: 0 },
+    rule: 'A few balls wear the crown. Bump a crown to steal it. Wear one when time runs out to win.',
+    begin() {
+      party.crowns = new Set(); party.crownAt = new Map(); party.crownTold = false;
+      const n = Math.max(1, Math.round(players.length * CROWN_SHARE));
+      for (const p of players.slice().sort(() => Math.random() - 0.5).slice(0, n)) party.crowns.add(p);
+    },
+    update(dt) {
+      const C = party.crowns;
+      if (!party.crownTold) {
+        party.crownTold = true;
+        const names = [...C].map(p => p.name).join(' and ');
+        for (const p of people()) tell(p, C.has(p) ? 'You have the crown! Don’t get bumped' : `${names} ${C.size > 1 ? 'have' : 'has'} the crown. Bump to steal it`, 2400, C.has(p) ? 25 : 0);
+      }
+      // a crown whose holder has gone goes to someone still on
+      for (const p of [...C]) if (!players.includes(p)) passCrown(p);
+      for (const p of C) if (p.alive) earn(p, dt, 1);
+    },
+    contact(a, b, imp) {
+      if (a.kind !== 'cue' || b.kind !== 'cue' || imp < CROWN_V) return;
+      const C = party.crowns, x = a.owner, y = b.owner;
+      if (C.has(x) === C.has(y)) return;
+      const h = C.has(x) ? x : y, q = h === x ? y : x;
+      if (crownSafe(h) || crownSafe(q)) return;
+      stealCrown(q, h);
+    },
+    // knocked out wearing it: it goes to someone at random still on the table
+    down(v) { if (party.crowns.has(v)) passCrown(v); return false; },
+    shot(p) { if (party.crowns.has(p)) p.cooldown *= CROWN_RELOAD; },
+    pow: p => party.crowns.has(p) ? CROWN_POW : 1,
+    wash: p => party.crowns?.has(p) ? GOLD_COL : null,
+    foe: (p, q) => party.crowns.has(p) !== party.crowns.has(q),
+    place() { const C = party.crowns; return players.filter(p => C.has(p)).sort(byScore).concat(players.filter(p => !C.has(p)).sort(byScore)); },
+    plan(p) {
+      const C = party.crowns;
+      if (C.has(p)) { const t = nearestBall(p, alivePlayers().filter(o => !C.has(o))); return t && t.d < CROWN_SCARE ? { ...flee(p, t.o.x, t.o.y, 0.6), urgent: t.d < CROWN_SCARE * 0.6 } : null; }
+      const t = nearestBall(p, alivePlayers().filter(o => C.has(o) && !crownSafe(o)));
+      if (!t) return null;
+      return { ...steer(p, t.o.x, t.o.y, t.d + 160, 0.95), urgent: party.t < 10 || t.d < 300 };
+    },
+    // the crown over each one, as the arena's leader wears it
+    air(g) { for (const p of party.crowns || []) if (p.alive && p.ball && inView(p.ball.x, p.ball.y)) { drawCrown(g, p.ball.x, p.ball.y - p.ball.r - 29, 13, LEAD_COL); g.globalAlpha = 1; } },
+    bar: () => { const C = party.crowns || new Set(); return C.has(me) ? '<b style="color:var(--gold)">You have the crown!</b>' : `${C.size} crown${C.size === 1 ? '' : 's'} · bump to steal`; },
+    summary: () => { const C = [...(party.crowns || [])]; return C.length ? `${C.map(p => esc(p.name)).join(', ')} kept the crown` : 'Nobody kept the crown'; }
+  },
   soccer: {
-    name: 'Team Soccer', short: 'Blue against red, score in their goal', T: 90, clear: true, teams: true, botFocus: 12, botMix: { pots: 0.05, fights: 0.3 },
+    ...TEAM_ROUND,
+    name: 'Team Soccer', short: 'Blue against red, score in their goal', T: 90, clear: true, botMix: { pots: 0.05, fights: 0.3 },
     rule: 'Blue against red. Knock the big ball into the other team’s goal.',
     begin() {
       // the left goal is blue's to defend
       makeTeams();
       party.goals = [0, 0];
       // the goals are two big holes in team colours; the holes and cushions near them, or in the middle, step aside
-      const goals = [0, 1].map(t => ({ x: TC + (t ? 1 : -1) * (RT_FULL - GOAL_IN), y: TC, r: GOAL_R, drain: false, base: 0, boost: 0, flash: 0, goal: t }));
-      const clearOf = (x, y, m) => goals.every(q => Math.hypot(x - q.x, y - q.y) > m) && Math.hypot(x - TC, y - TC) > 300;
-      party.saved = [pockets.splice(0), segs.splice(0)];
-      pockets.push(...goals, ...party.saved[0].filter(p => clearOf(p.x, p.y, 420)));
-      segs.push(...party.saved[1].filter(s => clearOf((s.x1 + s.x2) / 2, (s.y1 + s.y2) / 2, 380)));
-      buildStaticGrid(); tileCache.clear();
+      const goals = [0, 1].map(t => mkHole(TC + (t ? 1 : -1) * (RT_FULL - GOAL_IN), TC, GOAL_R, { base: 0, goal: t }));
+      clearLayout(goals, 420, goals, 380, (x, y) => Math.hypot(x - TC, y - TC) > 300);
       for (const b of balls) if (b.kind !== 'cue') b.dead = true;
       kickoff();
     },
@@ -4604,9 +5108,7 @@ const ROUNDS = {
       if (party.ball) party.ball.dead = true; party.ball = null;
       restoreLayout();
     },
-    spawn: teamSpawn,
-    wash: teamWash,
-    place() { const g = party.goals; return teamPlace(g[0] === g[1] ? -1 : g[0] > g[1] ? 0 : 1); },
+    place: () => placeBy(party.goals),
     plan(p) {
       const c = p.ball, b = party.ball, t = party.team.get(p);
       if (!b) return steer(p, TC + (t ? 1 : -1) * 300, TC, 200, 0.4);
@@ -4625,11 +5127,12 @@ const ROUNDS = {
       for (const q of pockets) if (q.goal !== undefined) { g.fillStyle = rgba(TEAM_COL[q.goal], 0.08); g.strokeStyle = rgba(TEAM_COL[q.goal], 0.6); circle(g, q.x, q.y, q.r + 110); g.fill(); g.stroke(); }
       g.restore();
     },
-    bar: () => teamScore(party.goals[0], party.goals[1]),
-    summary: () => `Blue ${party.goals[0]} – ${party.goals[1]} Red`
+    bar: () => teamScore(party.goals),
+    summary: () => teamLine(party.goals)
   },
   ctf: {
-    name: 'Capture the Flag', short: 'Grab their flag and bring it home', T: 120, teams: true, botFocus: 12, botMix: { pots: 0.15, fights: 0.6 },
+    ...TEAM_ROUND,
+    name: 'Capture the Flag', short: 'Grab their flag and bring it home', T: 120, botMix: { pots: 0.15, fights: 0.6 },
     rule: 'Roll over their flag to grab it, then get it to your base while yours is still home. A hard bump knocks it loose.',
     begin() {
       makeTeams();
@@ -4641,7 +5144,6 @@ const ROUNDS = {
       for (const u of [0, 1]) mates(u).filter(p => p.isBot).forEach((p, i) => party.role.set(p, i % 2));
       clearLayout(party.bases, BASE_R + 170);
     },
-    end() { restoreLayout(); },
     update(dt) {
       for (const f of party.flags) {
         if (f.state === 'carried') { if (f.by.alive) { f.x = f.by.ball.x; f.y = f.by.ball.y; } else flagHome(f, null); }
@@ -4667,8 +5169,7 @@ const ROUNDS = {
     down(v) { for (const f of party.flags) if (f.by === v) dropFlag(f, party.koAt.x, party.koAt.y); return false; },
     pow: p => party.flags.some(f => f.by === p) ? FLAG_POW : 1,
     spawn: p => { const B = party.bases[teamOf(p)], inward = teamOf(p) ? -1 : 1; return freeSpot(R, { near: { x: B.x + inward * rnd(60, 280), y: B.y + rnd(-280, 280), r: 10 }, pocketGap: 60 }); },
-    wash: teamWash,
-    place() { const c = party.caps; return teamPlace(c[0] === c[1] ? -1 : c[0] > c[1] ? 0 : 1); },
+    place: () => placeBy(party.caps),
     plan: ctfPlan,
     felt(g) {
       for (const t of [0, 1]) {
@@ -4691,15 +5192,15 @@ const ROUNDS = {
       if (pass === 0) { for (const t of [0, 1]) { const B = party.bases[t]; g.fillStyle = rgba(TEAM_COL[t], 0.4); g.beginPath(); g.arc(at(B.x), at(B.y), BASE_R * k, 0, TAU); g.fill(); } return; }
       for (const f of party.flags) miniFlag(g, at(f.x), at(f.y), TEAM_COL[f.t]);
     },
-    bar: () => party.flags.some(f => f.by === me) ? '<b style="color:var(--gold)">Take it home!</b>' : teamScore(party.caps[0], party.caps[1]),
-    summary: () => `Blue ${party.caps[0]} – ${party.caps[1]} Red`
+    bar: () => party.flags.some(f => f.by === me) ? '<b style="color:var(--gold)">Take it home!</b>' : teamScore(party.caps),
+    summary: () => teamLine(party.caps)
   },
   race: {
     name: 'Race to the Hole', short: 'First ball down the far hole wins', T: 90, clear: true, botFocus: 14, botMix: { pots: 0, fights: 0.25 },
     rule: 'Get your ball down the gold hole on the far side. Fall in any other hole and you go back to where you shot from.',
     begin() {
       party.start = { x: TC - (RT_FULL - START_IN), y: TC };
-      party.finish = { x: TC + (RT_FULL - FINISH_IN), y: TC, r: FINISH_R, drain: false, base: 0, boost: 0, flash: 0, finish: true };
+      party.finish = mkHole(TC + (RT_FULL - FINISH_IN), TC, FINISH_R, { base: 0, finish: true });
       party.done = []; party.d0 = Math.hypot(party.finish.x - party.start.x, 0);
       for (const p of players) p.raceRest = null;
       clearLayout([party.start, party.finish], 330, [party.finish]);
@@ -4715,7 +5216,7 @@ const ROUNDS = {
     },
     down(v, killer, edge) {
       v.respawnT = PARTY_RESPAWN;
-      cardFor(v, edge ? 'Off the edge' : 'Wrong hole', 'Back to where you shot from');
+      cardFor(v, edge ? 'Fell off!' : 'Wrong hole!', 'Back you go');
       return true;
     },
     place() {
@@ -4742,14 +5243,14 @@ const ROUNDS = {
     summary: () => party.done[0] ? `${esc(party.done[0].name)} won` : 'Nobody made it'
   },
   control: {
-    name: 'Control', short: 'Hold more zones than them', T: 100, teams: true, botFocus: 12, botMix: { pots: 0.15, fights: 0.4 },
+    ...TEAM_ROUND,
+    name: 'Control', short: 'Hold more zones than them', T: 100, botMix: { pots: 0.15, fights: 0.4 },
     rule: 'Three zones. Have more of your team in one to take it. Every zone you hold scores for your team.',
     begin() {
       makeTeams(); party.ctl = [0, 0];
       party.zones = ['A', 'B', 'C'].map((n, i) => ({ n, x: TC + (i - 1) * ZONE_GAP, y: TC, p: 0, owner: -1, inN: [0, 0] }));
       clearLayout(party.zones, ZONE_R + 120);
     },
-    end() { restoreLayout(); },
     update(dt) {
       for (const z of party.zones) {
         z.inN[0] = z.inN[1] = 0;
@@ -4767,9 +5268,7 @@ const ROUNDS = {
       for (const p of alivePlayers()) { const z = zoneAt(p.ball); if (z && z.owner === teamOf(p)) earn(p, dt, 1); }
       if (party.ctl[0] >= CTL_WIN || party.ctl[1] >= CTL_WIN) party.t = 0;
     },
-    spawn: teamSpawn,
-    wash: teamWash,
-    place() { const c = party.ctl.map(Math.floor); return teamPlace(c[0] === c[1] ? -1 : c[0] > c[1] ? 0 : 1); },
+    place: () => placeBy(party.ctl.map(Math.floor)),
     plan: controlPlan,
     felt(g) {
       for (const z of party.zones) {
@@ -4784,8 +5283,8 @@ const ROUNDS = {
       if (pass) return;
       for (const z of party.zones) { g.fillStyle = z.owner >= 0 ? rgba(TEAM_COL[z.owner], 0.6) : 'rgba(255,255,255,0.22)'; g.beginPath(); g.arc(at(z.x), at(z.y), ZONE_R * k, 0, TAU); g.fill(); }
     },
-    bar: () => `${teamScore(Math.floor(party.ctl[0]), Math.floor(party.ctl[1]))} · ${party.zones.map(z => `<b style="color:${z.owner >= 0 ? TEAM_COL[z.owner] : 'var(--muted)'}">${z.n}</b>`).join(' ')}`,
-    summary: () => `Blue ${Math.floor(party.ctl[0])} – ${Math.floor(party.ctl[1])} Red`
+    bar: () => `${teamScore(party.ctl.map(Math.floor))} · ${party.zones.map(z => `<b style="color:${z.owner >= 0 ? TEAM_COL[z.owner] : 'var(--muted)'}">${z.n}</b>`).join(' ')}`,
+    summary: () => teamLine(party.ctl.map(Math.floor))
   }
 };
 for (const k in ROUNDS) ROUNDS[k].kind = k;
@@ -4809,7 +5308,7 @@ function blowPotato() {
   party.potato = null; party.potatoWait = POTATO_WAIT;
   b.actBy = null; detonate(b);                 // the blast throws everyone near it
   party.koAt = { x: b.x, y: b.y }; if (h === me) deathPos = party.koAt; downPlayer(h);
-  partyOut(h, 'Your potato went off');
+  partyOut(h, 'Boom!');
   noticeAll(`${h.name}'s potato went off`, 2600, h);
 }
 function bite(z, h) {
@@ -4818,6 +5317,27 @@ function bite(z, h) {
   sfxMagnet(h.ball.x, h.ball.y, h === me || z === me);
   tell(h, 'You turned. Get them!', 2200, 40);
   fxAll(h.ball.x, h.ball.y, 14, ZOMBIE_COL, '#d9ffc9', 0);
+}
+// ---- crown ----
+const crownSafe = p => time - (party.crownAt?.get(p) ?? -99) < CROWN_SAFE;
+function stealCrown(to, from) {
+  const C = party.crowns; C.delete(from); C.add(to);
+  party.crownAt.set(to, time); party.crownAt.set(from, time);
+  const late = party.t < CROWN_LAST;
+  award(to, late ? CROWN_PTS * 2 : CROWN_PTS, to.ball.x, to.ball.y, late ? 'CROWN BY TECHNICALITY' : 'STOLE THE CROWN');
+  tell(to, 'You have the crown! Keep it', 1800, 25);
+  tell(from, `${to.name} took your crown! Get it back`, 1800, 20);
+  sfxTing(to.ball.x, to.ball.y, to === me || from === me);
+  fxAll(to.ball.x, to.ball.y, 18, GOLD_COL, '#fff6c2', 0);
+}
+// its holder's gone (knocked out or left): to someone at random still on the table without one
+function passCrown(from) {
+  const C = party.crowns; C.delete(from);
+  const to = pickOne(alivePlayers().filter(p => p !== from && !C.has(p) && players.includes(p)));
+  if (!to) return;
+  C.add(to); party.crownAt.set(to, time);
+  noticeAll(`${from.name} lost the crown. ${to.name} has it`, 2000, to, 'The crown fell to you! Keep it', 25);
+  if (to.ball) fxAll(to.ball.x, to.ball.y, 14, GOLD_COL, '#fff6c2', 0);
 }
 // ---- capture the flag ----
 function grabFlag(f, p) {
@@ -4851,9 +5371,7 @@ function captureFlag(f, p) {
   award(p, CAP_PTS, B.x, B.y, 'YOU CAPTURED');
   evFor(p, 'capture');
   flagHome(f, null);
-  noticeAll(`${TEAM_NAME[u]} captures!  ${party.caps[0]} – ${party.caps[1]}`, 2200);
-  fxAll(B.x, B.y, 40, TEAM_COL[u], '#ffffff', 0.4);
-  sfxTing(B.x, B.y, teamOf(me) === u);
+  teamFx(u, `${TEAM_NAME[u]} captures!  ${party.caps[0]} – ${party.caps[1]}`, B.x, B.y, true);
   if (party.caps[u] >= CAPS_WIN) party.t = 0;
 }
 // bots: the carrier runs home; anyone whose flag is taken goes for the carrier, or sends it home if
@@ -4925,9 +5443,9 @@ function raceCourse() {
     let y = -half;
     for (const g of gaps) { if (g - GATE_GAP / 2 - y > 20) segs.push({ x1: gx, y1: TC + y, x2: gx, y2: TC + g - GATE_GAP / 2, t: 8 }); y = g + GATE_GAP / 2; }
     if (half - y > 20) segs.push({ x1: gx, y1: TC + y, x2: gx, y2: TC + half, t: 8 });
-    for (const g of gaps) pockets.push({ x: gx + GATE_HOLE, y: TC + g + (Math.random() < 0.5 ? -1 : 1) * rnd(40, 90), r: 26, drain: false, base: 1, boost: 0, flash: 0 });
+    for (const g of gaps) pockets.push(mkHole(gx + GATE_HOLE, TC + g + (Math.random() < 0.5 ? -1 : 1) * rnd(40, 90), 26));
   }
-  buildStaticGrid(); tileCache.clear();
+  tableChanged();
 }
 // how far a player still has to go (their ball, or where they'll come back on)
 function raceLeft(p) {
@@ -4940,7 +5458,7 @@ function raceFinish(p) {
   award(p, FINISH_PTS[n - 1] ?? 0, party.finish.x, party.finish.y, n === 1 ? 'YOU WON THE RACE' : `FINISHED ${ordinal(n).toUpperCase()}`);
   const at = { x: party.finish.x, y: party.finish.y };
   if (p === me) deathPos = at;
-  cardFor(p, n === 1 ? 'You won the race!' : `You finished ${ordinal(n)}`, 'Float about as a ghost while the rest finish', { cd: false, ghost: true, conf: n === 1, at });
+  cardFor(p, n === 1 ? 'You won the race!' : `You finished ${ordinal(n)}`, 'Watch the rest finish', { cd: false, ghost: true, conf: n === 1, at });
   noticeAll(n === 1 ? `${p.name} won the race!` : `${p.name} finished ${ordinal(n)}`, 1800, p);
   if (n === 1) party.t = Math.min(party.t, RACE_AFTER);
   if (players.every(q => party.done.includes(q))) party.t = 0;
@@ -4973,9 +5491,7 @@ const zoneAt = b => party.zones.find(z => Math.hypot(b.x - z.x, b.y - z.y) < ZON
 function takeZone(z, t) {
   z.owner = t;
   for (const p of alivePlayers()) if (teamOf(p) === t && zoneAt(p.ball) === z) { award(p, ZONE_PTS, z.x, z.y, `TOOK ${z.n}`); evFor(p, 'zone'); }
-  noticeAll(`${TEAM_NAME[t]} took ${z.n}`, 1400);
-  fxAll(z.x, z.y, 24, TEAM_COL[t], '#ffffff', 0);
-  sfxTing(z.x, z.y, teamOf(me) === t);
+  teamFx(t, `${TEAM_NAME[t]} took ${z.n}`, z.x, z.y, false);
 }
 // bots: in a zone, knock out anyone from the other team in it, else stay; otherwise head for the zone
 // that needs them most (ones you don't hold, near ones, where your team is thin)
@@ -5003,13 +5519,12 @@ function soccerIn(b, p) {
   party.goals[t]++;
   for (const q of players) if (party.team.get(q) === t) award(q, GOAL_PTS, p.x, p.y, q === who ? 'YOU SCORED' : 'GOAL');
   if (who && party.team.get(who) === t) { award(who, GOAL_PTS, p.x, p.y, 'YOU SCORED'); evFor(who, 'goal'); }
-  noticeAll(`${TEAM_NAME[t]} scores!  ${party.goals[0]} – ${party.goals[1]}`, 2200);
-  fxAll(p.x, p.y, 40, TEAM_COL[t], '#ffffff', 0.4);
+  teamFx(t, `${TEAM_NAME[t]} scores!  ${party.goals[0]} – ${party.goals[1]}`, p.x, p.y, true);
 }
 // off the table (their ball goes too); dropping also takes them out of the game
 const unseat = p => { if (p.ball) p.ball.dead = true; downPlayer(p); };
 function dropPlayer(p) { unseat(p); const i = players.indexOf(p); if (i >= 0) players.splice(i, 1); }
-function setRT(r) { if (r === RT) return; RT = r; tileCache.clear(); }
+function setRT(r) { if (r === RT) return; RT = r; dropTiles(); }
 function clearLoot() { for (const b of balls) if (b.kind === 'loot' || b.kind === 'breaker') b.dead = true; breaker = null; pendingLoot.length = 0; }
 const dropBots = () => { for (const p of players.slice()) if (p.isBot) dropPlayer(p); };
 // Party starts with the bots you asked for (at least one, if you're on your own). Hosting for
@@ -5028,7 +5543,7 @@ function partyBegin() {
 function partyLobby() {
   dropBots(); clearLoot(); restoreLayout(); setRT(RT_FULL);
   party.phase = 'lobby'; party.list = partyPicks(); party.i = 0; party.team = null;
-  roundBar.hidden = true; ghost = null;
+  uiHide(roundBar); ghost = null;
   lobbyCard(false);
 }
 // the lobby: written again whenever someone comes or goes, or the bots change
@@ -5063,7 +5578,7 @@ function partyLate(p) {
   if (party.phase === 'podium' || party.phase === 'off') return;
   const r = curRound();
   if (r.teams && party.team) teamUp(p);
-  if (r.elim && party.phase === 'play') { p.respawnT = Infinity; if (!party.out.includes(p)) party.out.push(p); cardFor(p, 'This round is under way', 'You’re in from the next one', { cd: false, ghost: true }); }
+  if (r.elim && party.phase === 'play') { p.respawnT = Infinity; if (!party.out.includes(p)) party.out.push(p); cardFor(p, 'Round in progress', 'You’re in next round', { cd: false, ghost: true }); }
 }
 // someone leaving: whatever they were holding goes back
 function partyLeft(p) {
@@ -5072,6 +5587,7 @@ function partyLeft(p) {
   if (party.potato === p) { party.potato = null; party.potatoWait = POTATO_WAIT; }
   for (const f of party.flags || []) if (f.by === p) flagHome(f, null);
   if (party.king === p) party.king = null;
+  if (party.crowns?.has(p) && party.phase === 'play' && curRound()?.kind === 'crown') passCrown(p);
 }
 // a round's card: what it is, then 3-2-1
 function partyIntro() {
@@ -5083,12 +5599,12 @@ function partyIntro() {
   // everyone starts fresh, spread over the table
   ghost = null;
   for (const p of players) { unseat(p); spawnPlayer(p); p.score = 0; p.immuneT = 1.2; updMass(p); }
-  deathEl.hidden = true;
+  uiHide(deathEl);
   cardAll(`<p class="pk">Round ${party.i + 1} of ${party.list.length}</p><h2>${r.name}</h2><p>${r.rule}</p><p class="cd" id="pCount">3</p>`, 'intro');
 }
 // one card at a time: a round card replaces the death card
 function showCard(html, quiet) {
-  pBody.innerHTML = html; pCard.hidden = false; deathEl.hidden = true;
+  pBody.innerHTML = html; uiShow(pCard); uiHide(deathEl);
   if (!quiet) { pBody.style.animation = 'none'; void pBody.offsetWidth; pBody.style.animation = ''; }   // rise in again for each new screen
 }
 function moveHot() {
@@ -5145,7 +5661,7 @@ function confetti(big) {
 function confFrame(now) {
   const dt = Math.min(0.05, (now - confLast) / 1000); confLast = now;
   const W = Math.round(VW * DPR), H = Math.round(VH * DPR);
-  if (confCv.width !== W || confCv.height !== H) { confCv.width = W; confCv.height = H; }
+  sizeTo(confCv, W, H);
   const g = confG; g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H); g.setTransform(DPR, 0, 0, DPR, 0, 0);
   for (let i = conf.length - 1; i >= 0; i--) {
     const c = conf[i]; c.t += dt;
@@ -5194,7 +5710,7 @@ function ghostShoot(a) {
 }
 // it rolls like a ball (the same friction), turning as it goes; the rim bounces it back in
 function ghostUpdate(dt) {
-  if (ghostCardT > 0 && (ghostCardT -= dt) <= 0) { deathEl.hidden = true; notice("You're a ghost. Drag to float about", 2400); }
+  if (ghostCardT > 0 && (ghostCardT -= dt) <= 0) { uiHide(deathEl); notice("You're a ghost. Drag to float about", 2400); }
   const b = ghost, s = Math.hypot(b.vx, b.vy);
   if (s > 0) { const k = Math.max(0, s - (FRICTION + DRAG * s) * dt) / s; b.vx *= k; b.vy *= k; if (s * k < SNAP_V) b.vx = b.vy = 0; }
   const nx = b.x + b.vx * dt, ny = b.y + b.vy * dt; rollBy(b, nx - b.x, ny - b.y); b.x = nx; b.y = ny;
@@ -5213,21 +5729,22 @@ function drawGhostAim(g) {
 // out of this round for good
 function partyOut(p, title) {
   p.respawnT = Infinity; if (!party.out.includes(p)) party.out.push(p);
-  cardFor(p, title, `${alivePlayers().length + 1} left standing when you went`, { cd: false, ghost: true });
+  cardFor(p, title, `${alivePlayers().length} still in`, { cd: false, ghost: true });
 }
 // a knock-out in party: no loot, no stealing. The round decides what it means.
 function partyKO(victim, killer, x, y, edge) {
-  if (party.phase === 'lobby') { downPlayer(victim); victim.respawnT = 0.8; return; }     // just messing about while you wait
-  const r = curRound();
+  // messing about in the lobby, or rolling on under the podium: no round to say what it means
+  const r = party.phase === 'lobby' ? null : curRound();
+  if (!r) { downPlayer(victim); victim.respawnT = 0.8; return; }
   downPlayer(victim); party.koAt = { x, y }; if (victim === me) deathPos = party.koAt;
   if (killer && r.koPts && party.phase === 'play') award(killer, KO_PTS, x, y, `KNOCKED OUT ${victim.name.toUpperCase()}`);
   if (r.down && r.down(victim, killer, edge)) return;
-  if (r.elim) { partyOut(victim, "You're out"); return; }
+  if (r.elim) { partyOut(victim, 'You’re out!'); return; }
   victim.respawnT = PARTY_RESPAWN;
-  cardFor(victim, killer ? `${killer.name} knocked you out` : edge ? 'You fell off' : 'You scratched');
+  cardFor(victim, killer ? 'Knocked out!' : edge ? 'Fell off!' : 'Scratched!', killer ? `by ${esc(killer.name)}` : '');
 }
 function partyUpdate(dt) {
-  if (party.phase === 'off' || party.phase === 'podium' || party.phase === 'lobby') { if (!roundBar.hidden) roundBar.hidden = true; return; }
+  if (party.phase === 'off' || party.phase === 'podium' || party.phase === 'lobby') { uiHide(roundBar); return; }
   party.t -= dt;
   const r = curRound();
   if (!r) return;
@@ -5239,7 +5756,7 @@ function partyUpdate(dt) {
   }
   if (party.phase === 'intro') {
     const c = $('pCount'); if (c) c.textContent = party.t > 0.2 ? Math.ceil(party.t - 0.2) : 'Go';
-    if (party.t <= 0) { party.phase = 'play'; party.t = r.T; pCard.hidden = true; }
+    if (party.t <= 0) { party.phase = 'play'; party.t = r.T; uiHide(pCard); }
   } else if (party.phase === 'play') {
     r.update?.(dt);
     if (r.elim && party.t < r.T - 2 && alivePlayers().length <= 1) party.t = 0;
@@ -5253,7 +5770,7 @@ function partyUpdate(dt) {
 const rb = { name: $('rbName'), idx: $('rbIdx'), time: $('rbTime'), stat: $('rbStat'), last: {} };
 function roundPanel(r) {
   const on = party.phase === 'play';
-  if (roundBar.hidden === on) roundBar.hidden = !on;
+  uiSet(roundBar, on);
   if (!on) return;
   const s = Math.max(0, Math.ceil(party.t)), L = rb.last;
   const put = (k, el, v, html) => { if (L[k] !== v) { L[k] = v; if (html) el.innerHTML = v; else el.textContent = v; } };
@@ -5290,7 +5807,7 @@ function syncDbg() { for (const k of ['god', 'slow', 'refill']) { const el = dbg
 dbgEl.addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (!b) return; DBG_ACTIONS[b.dataset.a](); b.blur(); });
 function startDebug() {
   dropBots();
-  clearLoot(); dbgEl.hidden = false; syncDbg();
+  clearLoot(); uiShow(dbgEl); syncDbg();
 }
 function dbgTick(dt, upd, ren) {
   if (MODE !== 'debug') return;
@@ -5349,8 +5866,7 @@ const uiGL = cv => { try { return cv && makeBallGL(cv, UI.GL); } catch (_) { ret
 // one frame of a ball's springs and roll; `on` is whether it's the picked one
 function uiStep(b, on, dt) {
   const want = (on ? 1 : 0) + (b.held ? UI.GRAB_LIFT : 0);
-  b.lv += (want - b.lift) * UI.LIFT_K * dt - b.lv * UI.LIFT_C * dt; b.lift += b.lv * dt;
-  b.sv += -b.sq * UI.SQ_K * dt - b.sv * UI.SQ_C * dt; b.sq += b.sv * dt;
+  tapSprings(b, want, dt);
   const sq = clamp(b.sq, UI.SQ_MIN, UI.SQ_MAX); b.d0 = 1 + sq; b.d1 = 0; b.d2 = 1 - sq;
   // stretched along the drag while it's moving under your finger, easing back round when it isn't
   const sp = b.held ? Math.hypot(b.dvx, b.dvy) : 0;
@@ -5444,7 +5960,7 @@ function rafLoop(tick) {
   return { start() { if (run) return; run = true; last = performance.now(); requestAnimationFrame(f); }, stop() { run = false; } };
 }
 // size a canvas to its box at the screen's pixel density; clear a ball renderer's canvas
-function fitCanvas(c, w, h) { const d = Math.min(MAX_DPR, window.devicePixelRatio || 1), W = Math.round(w * d), H = Math.round(h * d); if (c.width !== W || c.height !== H) { c.width = W; c.height = H; } return d; }
+function fitCanvas(c, w, h) { const d = Math.min(MAX_DPR, window.devicePixelRatio || 1), W = Math.round(w * d), H = Math.round(h * d); sizeTo(c, W, H); return d; }
 function clearGL(R) { const g = R.gl; g.viewport(0, 0, g.canvas.width, g.canvas.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT); }
 // a canvas of springy balls: place(b, i, w, h, dt) lays each out every frame, b.isOn() says which is
 // picked. With onTap, the canvas takes the presses itself. Null when there's no WebGL2.
@@ -5453,6 +5969,13 @@ function clearGL(R) { const g = R.gl; g.viewport(0, 0, g.canvas.width, g.canvas.
 // past it on every side, so a ball that lifts, grows or stretches overlaps whatever is round it
 // instead of being cut off at its box.
 const BALL_SPILL = 48;
+// how see-through an element is right now: its own opacity times every parent's (an animation's
+// included), so a ball layer can fade along with the screen its box is on
+function seenAlpha(el) {
+  let a = 1;
+  for (let e = el; e && e !== document.body; e = e.parentElement) { const o = +getComputedStyle(e).opacity; if (o < 1) { a *= o; if (a < 0.003) return 0; } }
+  return a;
+}
 function ballCanvas(cv, balls, place, onTap) {
   const layer = document.createElement('canvas'); layer.className = 'ballLayer'; layer.hidden = true; document.body.appendChild(layer);
   const R = uiGL(layer); if (!R) { layer.remove(); return null; }
@@ -5460,6 +5983,11 @@ function ballCanvas(cv, balls, place, onTap) {
   const loop = rafLoop(dt => {
     const r = cv.getBoundingClientRect(), P = BALL_SPILL, w = r.width + 2 * P, h = r.height + 2 * P;
     layer.style.transform = `translate(${r.left - P}px,${r.top - P}px)`;
+    // the layer sits over everything, so it takes its box's fade (a screen going or coming, or the box
+    // not on screen at all) rather than floating on by itself
+    const al = r.width ? seenAlpha(cv) : 0;
+    if (layer._a !== al) { layer._a = al; layer.style.opacity = al; }
+    if (!al) return;
     if (layer._w !== w || layer._h !== h) { layer._w = w; layer._h = h; layer.style.width = w + 'px'; layer.style.height = h + 'px'; }
     fitCanvas(layer, w, h); clearGL(R);
     balls.forEach((b, i) => { uiStep(b, b.isOn(), dt); place(b, i, r.width, r.height, dt); });
@@ -5493,7 +6021,7 @@ for (const btn of modeBtns) {
   // a click (or Enter/Space): pick it, and with a pointer, kick it from where it was hit
   btn.addEventListener('click', e => {
     const r = btn.getBoundingClientRect(), ox = e.clientX ? (e.clientX - (r.left + r.width / 2)) / (r.width / 2) : 0, oy = e.clientY ? (e.clientY - (r.top + r.height * MENU.BALL_Y)) / (r.height / 2) : 0;
-    pickMode(btn.dataset.mode);
+    pickMode(btn.dataset.mode); domTap(btn.querySelector('.lb'));
     if (menuBalls) uiTap(modeBall(btn), clamp(ox, -1, 1), clamp(oy, -1, 1));
   });
 }
@@ -5502,7 +6030,7 @@ function go(mode) {
   if (going) return;
   const n = nick.value.trim().slice(0, 14);
   me.name = n || 'You'; store.set('nick', n); nick.blur();
-  const enter = () => { $('start').hidden = true; document.body.classList.remove('menu'); startGame(mode); going = false; };
+  const enter = () => { uiHide($('start')); document.body.classList.remove('menu'); startGame(mode); going = false; };
   const b = menuSet.find(x => x.mode === mode);
   if (!menuBalls || REDUCE || b.drop >= 0) { enter(); return; }
   going = true; $('start').classList.add('leaving');
@@ -5672,9 +6200,7 @@ const tutorial = (() => {
     for (const p of s.holes) drawHole(g, p);
     LIFT = sL; KY = sK;
     // shadows on the felt, as the table draws them
-    g.fillStyle = 'rgba(0,0,0,0.3)';
-    for (const b of s.balls) { if (b.fade < 0.05) continue; g.globalAlpha = b.fade; g.beginPath(); g.arc(b.x + b.r * 0.22, b.y + b.r * 0.3, b.r * 1.02, 0, TAU); g.fill(); }
-    g.globalAlpha = 1;
+    drawShadows(g, s.balls);
     if (s.aim && step < 3) {
       const cue = s.balls[0], L = 30 + 190 * s.aim.pow;
       g.fillStyle = 'rgba(255,255,255,0.85)';
@@ -5730,26 +6256,41 @@ const skinGrid = ballCanvas($('skinBalls'), SKINS.map(skinBall), (b, i, w, h) =>
   b.x = cw * (i % SKIN_COLS + 0.5); b.y = ch * (Math.floor(i / SKIN_COLS) + 0.5) - 6 * b.lift; b.r = Math.min(cw, ch) * 0.34 * (1 + 0.22 * b.lift);
 }, b => { mySkin = b.skin.id; store.set('skin', mySkin); $('skinName').textContent = b.skin.name; });
 // the title screen's balls only run while it shows
-new MutationObserver(() => { const off = $('start').hidden || $('startForm').hidden; for (const v of [menuBalls, youBall]) if (v) v[off ? 'stop' : 'start'](); })
+// the logo taps like a menu ball as the title screen comes up (once it has faded in a little), and when you tap it
+let logoWas = false;
+const logoEl = document.querySelector('.logo');
+logoEl.addEventListener('pointerdown', () => { domTap(logoEl); sfxBall(520, cam.x, cam.y, true); buzz(8); });
+new MutationObserver(() => {
+  const off = $('start').hidden || $('startForm').hidden; for (const v of [menuBalls, youBall]) if (v) v[off ? 'stop' : 'start']();
+  if (!off && !logoWas) setTimeout(() => domTap(logoEl), 120);
+  logoWas = !off;
+})
   .observe($('start'), { attributes: true, subtree: true, attributeFilter: ['hidden'] });
 // sheets: one at a time in place of the title form
 const SHEETS = ['howSheet', 'skinSheet', 'setSheet', 'partySheet', 'chSheet', 'netSheet'];
 function openSheet(id) {
-  $('startForm').hidden = true; for (const s of SHEETS) $(s).hidden = s !== id;
-  if (id === 'howSheet') tutorial.open();
-  if (id === 'skinSheet') { $('skinName').textContent = (SKINS.find(s => s.id === mySkin) || SKINS[0]).name; skinGrid?.start(); }
+  if (id === 'skinSheet') $('skinName').textContent = (SKINS.find(s => s.id === mySkin) || SKINS[0]).name;
   if (id === 'setSheet') syncSet();
   if (id === 'partySheet') syncPicks();
+  if (id === 'chSheet') syncCh();
+  // the live canvases measure themselves, so they start once their sheet is up
+  if (id === 'skinSheet') clearTimeout(closeSheets.t);
+  menuTo(id, () => { if (id === 'howSheet') tutorial.open(); if (id === 'skinSheet') skinGrid?.start(); });
 }
-function closeSheets() { tutorial.close(); skinGrid?.stop(); for (const s of SHEETS) $(s).hidden = true; $('startForm').hidden = false; }
-function syncSet() { for (const k of ['sound', 'buzz', 'tilt']) $('set-' + k).setAttribute('aria-checked', settings[k] ? 'true' : 'false'); }
-for (const k of ['sound', 'buzz', 'tilt']) $('set-' + k).addEventListener('click', () => {
-  settings[k] = !settings[k]; saveSet(); syncSet(); applySettings(); if (k !== 'sound' || settings.sound) sfxBall(500, cam.x, cam.y, true); buzz(6);
+// the live canvases stop once their sheet has finished going (the skins' balls fade out with it)
+function closeSheets() { tutorial.close(); clearTimeout(closeSheets.t); closeSheets.t = setTimeout(() => skinGrid?.stop(), UI_OUT_MS + 20); menuTo('startForm'); }
+function syncSet() {
+  for (const k of ['sound', 'buzz', 'tilt']) $('set-' + k).setAttribute('aria-checked', settings[k] ? 'true' : 'false');
+  $('set-calm').setAttribute('aria-checked', REDUCE ? 'true' : 'false');
+}
+for (const k of ['sound', 'buzz', 'tilt', 'calm']) onTap('set-' + k, () => {
+  settings[k] = k === 'calm' ? !REDUCE : !settings[k]; saveSet(); applySettings(); syncSet(); if (k !== 'sound' || settings.sound) sfxBall(500, cam.x, cam.y, true); buzz(6);
 });
 // the 3D camera has a key too (T), through the in-game button
 const tiltBtn = $('tiltBtn');
 function applySettings() {
   if (master) master.gain.value = settings.sound ? MASTER_VOL : 0;
+  REDUCE = settings.calm ?? SYS_REDUCE; document.body.classList.toggle('calm', REDUCE);
   tiltOn = settings.tilt; tiltBtn.setAttribute('aria-pressed', tiltOn ? 'true' : 'false');
 }
 applySettings();
@@ -5775,10 +6316,17 @@ tiltBtn.addEventListener('click', () => { settings.tilt = !settings.tilt; saveSe
 //    nothing queues behind it), and a reliable one for joining, shots and events
 //  - input the same way back: while you drag, your aim (angle and power) goes up 30 times a second
 //    as a delta against the aim the host last acked; letting go sends the shot, reliably
+//  - a steady draw clock on the joining phone: it shows the world a little behind the host, the gap
+//    sized to how jittery the link is, so late packets never make anything jump (netClientStep)
 //  - liveness: the host drops a phone it hasn't heard from in 10 s; a phone that hears nothing for
 //    2 s says it's lost the host, and after 10 s goes back to the menu
+// A party works the same way: the host runs the rounds, and sends each phone its cards and the
+// round's state (partyWire / netParty) so the round's marks draw just as they do on the host.
 const PEERJS_URL = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
-const NET_OFF = 400, NET_SEND = 2, NET_RING = 64, NET_DELAY = 5, NET_DROP = 10, NET_STALL = 2;
+const NET_OFF = 400, NET_SEND = 2, NET_RING = 64, NET_DROP = 10, NET_STALL = 2;
+// the draw clock: at least this far behind the host (ticks), at most this far; a late snapshot lets balls
+// carry on along their speed for up to NET_EXTRA ticks rather than stopping dead
+const NET_DELAY_MIN = 3, NET_DELAY_MAX = 18, NET_EXTRA = 5, NET_SNAPS = 24;
 const T_SNAP = 1, T_IN = 2;
 const F_POS = 1, F_VEL = 2, F_ST = 4, F_SPAWN = 8, F_GONE = 16;
 const KINDS = ['cue', 'num', 'loot', 'bomb', 'magnet', 'frost', 'midas', 'breaker', 'soccer'];
@@ -5847,7 +6395,6 @@ if (NETLOG) {
   addEventListener('unhandledrejection', e => netLog('unhandled rejection:', e.reason));
   netLog('log on ·', navigator.userAgent.replace(/^Mozilla\/5\.0 /, ''), '· secure', isSecureContext, '· RTCPeerConnection', typeof RTCPeerConnection);
 }
-document.addEventListener('visibilitychange', () => { if (NET.role) netLog('page', document.hidden ? 'hidden (the phone may drop the link while it sleeps)' : 'visible'); });
 // how a connection's under-the-hood WebRTC link is getting on: the ICE candidates found (host = this
 // network, srflx = your public address via STUN, relay = a TURN server), each state change, and once
 // it's up, which kind of route it ended up on
@@ -5960,6 +6507,10 @@ const netStatus = (t, bad) => { const el = $('netStatus'); el.textContent = t; e
 const roomCode = () => { const A = 'BCDFGHJKLMNPQRSTVWXZ23456789'; let s = ''; for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)]; return s; };
 const netAll = o => { for (const c of NET.clients || []) c.link.send(o); };
 const netNote = t => { if (NET.role === 'host') netAll({ t: 'note', s: t }); };
+// log the first of each kind of message (the set remembers which have been seen)
+const netFirst = (seen, k, ...msg) => { if (!seen.has(k)) { seen.add(k); netLog(...msg); } };
+// a map that keeps only its newest `cap` entries
+const capSet = (m, k, v, cap = 64) => { m.set(k, v); if (m.size > cap) m.delete(m.keys().next().value); };
 function gainFor(p, amt, x, y, caption, pk) {
   if (!p) return;
   if (p === me) gainFx(amt, x, y, caption, pk);
@@ -5973,7 +6524,7 @@ function netHost(mode = 'arena') {
   netStatus('Opening a room…'); netLog('host: hosting', mode, 'room', code);
   NETX.host(code, netJoined).then(h => {
     netLog('host: room', code, 'is open, waiting for friends');
-    NET.role = 'host'; NET.code = code; NET.clients = []; NET.hostH = h; NET.sendTick = 0; NET.tableKey = ''; NET.psKey = '';
+    NET.role = 'host'; NET.code = code; NET.clients = []; NET.hostH = h; NET.sendTick = 0; NET.tableKey = JSON.stringify(tableMsg()); NET.psKey = '';
     closeSheets(); go(mode); syncRoomTag();
   }).catch(e => { netLog('host: could not open the room:', e); netStatus(e && e.type === 'unavailable-id' ? 'That room is taken, try again' : `Couldn't open a room (${e && (e.type || e.message) || 'no connection'})`, true); });
 }
@@ -6003,7 +6554,7 @@ function netDrop(c, why = 'link closed') {
 }
 function netHostRel(c, d) {
   c.heard = time;
-  if (!c.got.has(d.t)) { c.got.add(d.t); netLog('host: first', d.t, 'from', c.p.name); }
+  netFirst(c.got, d.t, 'host: first', d.t, 'from', c.p.name);
   if (d.t === 'shot') {
     const p = c.p; if (!p.alive) return;
     const a = clamp(+d.a || 0, -Math.PI, Math.PI), pow = clamp(+d.p || 0, 0.05, 1);
@@ -6014,7 +6565,7 @@ function netHostRel(c, d) {
 // input from a phone: [T_IN][seq][ack][aim-base seq][flags][angle, power: deltas or absolute]
 function netHostFast(c, buf) {
   c.heard = time;
-  if (!c.got.has('fast')) { c.got.add('fast'); netLog('host: first input packet from', c.p.name, '(fast channel works both ways)'); }
+  netFirst(c.got, 'fast', 'host: first input packet from', c.p.name, '(fast channel works both ways)');
   const r = new BR(buf); if (r.u8() !== T_IN) return;
   const seq = r.vi(), ack = r.vi(), base = r.vi(), fl = r.u8();
   if (seq <= c.inSeq) return;                         // late or repeated: a newer one's already in
@@ -6023,7 +6574,7 @@ function netHostFast(c, buf) {
   if (fl & 1) {
     const b = base && c.aimBase.get(base); let ang, pow;
     if (b) { ang = (b[0] + r.zz()) & 65535; pow = clamp(b[1] + r.zz(), 0, 1000); } else { ang = r.u16(); pow = r.vi(); }
-    c.aimBase.set(seq, [ang, pow]); if (c.aimBase.size > 64) c.aimBase.delete(c.aimBase.keys().next().value);
+    capSet(c.aimBase, seq, [ang, pow]);
     if (p.alive) { const a = ang / 65536 * TAU; p.windup = { dx: Math.cos(a), dy: Math.sin(a), pow: pow / 1000, t: 0, t0: 1, remote: true }; }
   } else if (p.windup?.remote) p.windup = null;
 }
@@ -6089,6 +6640,7 @@ function partyWire() {
     case 'shrink': o.warnR = P.warnR; break;
     case 'potato': o.pot = nidOf(P.potato); o.fuse = fx2(P.fuse || 0); o.fuseMax = P.fuseMax || 1; break;
     case 'zombie': o.z = [...P.zombies].map(nidOf); break;
+    case 'crown': o.cr = [...P.crowns].map(nidOf); o.cs = [...P.crownAt].filter(([, t]) => time - t < CROWN_SAFE).map(([p, t]) => [nidOf(p), fx2(time - t)]); break;
     case 'soccer': o.goals = P.goals; break;
     case 'ctf': o.caps = P.caps; o.bases = P.bases; o.flags = P.flags.map(f => [f.state, Math.round(f.x), Math.round(f.y), nidOf(f.by), fx2(time - f.dropT)]); break;
     case 'race': o.start = P.start; o.d0 = P.d0; o.done = P.done.map(nidOf); o.rest = players.filter(p => p.raceRest).map(p => [p.nid, Math.round(p.raceRest.x), Math.round(p.raceRest.y)]); break;
@@ -6100,7 +6652,7 @@ function partyWire() {
 function netParty(d) {
   const P = party, pl = n => NET.pmap.get(n) || null, was = P.phase;
   P.list = d.L; P.i = d.i; P.phase = d.ph; P.t = d.tm;
-  if (d.ph === 'play' && was !== 'play') pCard.hidden = true;
+  if (d.ph === 'play' && was !== 'play') uiHide(pCard);
   const r = d.ph === 'lobby' || d.ph === 'podium' || d.ph === 'off' ? null : curRound();
   P.team = d.team ? new Map(d.team.map(([n, u]) => [pl(n), u]).filter(e => e[0])) : null;
   const k = r && r.kind;
@@ -6112,6 +6664,7 @@ function netParty(d) {
   if (k === 'shrink') P.warnR = d.warnR;
   if (k === 'potato') { P.potato = pl(d.pot); P.fuse = d.fuse; P.fuseMax = d.fuseMax; }
   if (k === 'zombie') P.zombies = new Set(d.z.map(pl).filter(Boolean)); else if (!P.zombies) P.zombies = new Set();
+  if (k === 'crown') { P.crowns = new Set(d.cr.map(pl).filter(Boolean)); P.crownAt = new Map(d.cs.map(([n, age]) => [pl(n), time - age]).filter(e => e[0])); }
   if (k === 'soccer') P.goals = d.goals;
   if (k === 'ctf') { P.caps = d.caps; P.bases = d.bases; P.flags = d.flags.map(([state, x, y, by, age], t) => { const b = pl(by); return { t, state: state === 'carried' && !(b && b.alive && b.ball) ? 'home' : state, x, y, by: b, dropT: time - age }; }); }
   if (k === 'race') {
@@ -6124,8 +6677,8 @@ function netParty(d) {
 }
 function syncRoomTag() {
   const el = $('roomTag');
-  if (!NET.role) { el.hidden = true; return; }
-  el.hidden = false;
+  if (!NET.role) { uiHide(el); return; }
+  uiShow(el);
   if (NET.role === 'client') { el.innerHTML = `Room<b>${NET.code}</b>`; return; }
   const n = NET.clients.length;
   el.innerHTML = `Room<b>${NET.code}</b>${n ? ` · ${n} friend${n > 1 ? 's' : ''}` : ''}`;
@@ -6147,7 +6700,7 @@ function netJoin() {
     dropBots();
     for (const b of balls) { b.dead = true; gridDel(b); }
     balls.length = 0; sinkers.length = 0; breaker = null;
-    closeSheets(); $('start').hidden = true; document.body.classList.remove('menu');
+    closeSheets(); uiHide($('start')); document.body.classList.remove('menu');
     started = true; MODE = 'arena'; wakeAudio(); me.alive = false; me.ball = null; me.respawnT = 99; syncRoomTag();
     link.flush?.();
   }).catch(e => { netLog('join: failed:', e); netStatus(e && e.type === 'peer-unavailable' ? 'No game with that code' : (e && e.message) || "Couldn't connect", true); });
@@ -6160,21 +6713,32 @@ function netLost(why) {
 }
 function netClientRel(d) {
   NET.heard = time;
-  if (!NET.got.has(d.t)) { NET.got.add(d.t); netLog('join: first', d.t, 'from the host', d.t === 'hi' ? `(player ${d.you}, mode ${d.mode})` : d.t === 'table' ? `(${d.pk.length} holes, ${d.sg.length} cushions)` : ''); }
+  netFirst(NET.got, d.t, 'join: first', d.t, 'from the host', d.t === 'hi' ? `(player ${d.you}, mode ${d.mode})` : d.t === 'table' ? `(${d.pk.length} holes, ${d.sg.length} cushions)` : '');
   switch (d.t) {
     case 'hi': NET.you = d.you; NET.plKey = ''; MODE = d.mode === 'party' ? 'party' : 'arena'; party.phase = 'off'; break;
     case 'table': {
+      // the same table again (it's re-sent whenever anything about it might have changed): nothing to do
+      const key = JSON.stringify([d.pk, d.sg]);
       setRT(d.RT);
+      if (key === NET.tableKey) break;
+      NET.tableKey = key;
+      // a hole that's where it was keeps its drawn inside; the rest go back to the pool
+      const old = new Map(pockets.map(p => [`${Math.round(p.x)},${Math.round(p.y)},${p.r}`, p]));
       pockets.length = 0;
-      for (const q of d.pk) { const o = { x: q[0], y: q[1], r: q[2], drain: !!q[3], base: q[4], boost: q[5], mag: !!q[6], flash: 0 }; if (q[7] >= 0) o.goal = q[7]; if (q[8]) o.finish = true; pockets.push(o); }
+      for (const q of d.pk) {
+        const o = { x: q[0], y: q[1], r: q[2], drain: !!q[3], base: q[4], boost: q[5], mag: !!q[6], flash: 0 }; if (q[7] >= 0) o.goal = q[7]; if (q[8]) o.finish = true;
+        const k = `${q[0]},${q[1]},${q[2]}`, was = old.get(k); if (was) { o._shaft = was._shaft; old.delete(k); }
+        pockets.push(o);
+      }
+      for (const p of old.values()) if (p._shaft) shaftPool.push(p._shaft.cv);
       party.hot = null;
       segs.length = 0; for (const s of d.sg) segs.push({ x1: s[0], y1: s[1], x2: s[2], y2: s[3], t: s[4] });
-      buildStaticGrid(); tileCache.clear(); for (const p of pockets) p._shaft = null;
+      tableChanged();
       break;
     }
     case 'pl': if (d.you) NET.you = d.you; netPlayers(d.ps); break;
     case 'gain': gainFx(d.a, d.x, d.y, d.c, null); break;
-    case 'fl': floats.push({ x: d.x, y: d.y, text: d.s, color: d.c, size: d.z, life: 1.4, max: 1.4 }); break;
+    case 'fl': spawnFloat(d.x, d.y, d.s, d.c, d.z, d.r | 0, d.k ?? -1); break;
     case 'note': notice(d.s, d.ms || 2400); if (d.bz) buzz(d.bz); break;
     case 'ev': ev(d.k, d.n || 1); break;
     case 'fx': fxAt(d.x, d.y, d.n, d.a, d.b, d.s); break;
@@ -6183,7 +6747,7 @@ function netClientRel(d) {
     case 'card':
       if (d.ph === 'intro') { ghost = null; elNotice.style.opacity = 0; }
       if (d.ph) party.phase = d.ph;
-      roundBar.hidden = true;
+      uiHide(roundBar);
       showCard(d.h, !!d.q); bindCard();
       if (d.cf) confetti(d.cf === 2);
       break;
@@ -6199,8 +6763,7 @@ function netClientRel(d) {
       showDeath(k, d.S, d.tk, !!d.e); break;
     }
     case 'boom':
-      if (inView(d.x, d.y, 200)) { burst(d.x, d.y, 40, [80, 420], [0.4, 0.9], [2, 5], coin(COL.danger, COL.brass)); ringFx(d.x, d.y, 0.45, 20, BOMB_R, COL.danger); shake = Math.max(shake, 0.7); sfxBoom(d.x, d.y, false); }
-      break;
+      boomFx(d.x, d.y, false); break;
   }
 }
 // the players: names, scores, who's on, whose ball is whose (you are `me`, kept as the same object)
@@ -6213,7 +6776,7 @@ function netPlayers(ps) {
     const ball = ballId ? NET.balls.get(ballId) || null : null, was = p.alive;
     p.name = p === me ? me.name : name; p.score = score; p.isBot = !!isBot; p.skinId = skin || null; p.immuneT = imm ? 1 : 0;
     p.ball = ball; p.alive = !!(alive && ball); p.netBallId = alive ? ballId : 0;
-    if (p === me && p.alive && !was) { me.spawnT = time; deathEl.hidden = true; deathPos = null; }
+    if (p === me && p.alive && !was) { me.spawnT = time; uiHide(deathEl); deathPos = null; }
   }
   for (let i = players.length - 1; i >= 0; i--) { const p = players[i]; if (p !== me && !seen.has(p.nid)) { players.splice(i, 1); NET.pmap.delete(p.nid); } }
 }
@@ -6222,7 +6785,7 @@ function netClientFast(buf) {
   NET.heard = time;
   const r = new BR(buf); if (r.u8() !== T_SNAP) return;
   const tick = r.vi(), baseT = r.vi(), inAck = r.vi(), n = r.vi();
-  if (!NET.got.has('snap')) { NET.got.add('snap'); netLog('join: first snapshot,', buf.byteLength, 'bytes,', n, 'balls (fast channel works)'); }
+  netFirst(NET.got, 'snap', 'join: first snapshot,', buf.byteLength, 'bytes,', n, 'balls (fast channel works)');
   if (tick <= NET.latest) return;
   const base = baseT ? NET.hist.get(baseT) : null;
   if (baseT && !base) { if (++NET.misses % 30 === 1) netLog('join: snapshot against a baseline we never got, dropped (' + NET.misses + ' so far)'); return; }
@@ -6233,7 +6796,7 @@ function netClientFast(buf) {
     const o = snap.get(id), e = o ? { ...o } : { qx: 0, qy: 0, qvx: 0, qvy: 0, st: null };
     if (fl & F_POS) { if (fl & F_SPAWN) { e.qx = r.u16(); e.qy = r.u16(); } else { e.qx += r.zz(); e.qy += r.zz(); } }
     if (fl & F_VEL) { if (fl & F_SPAWN) { e.qvx = r.zz(); e.qvy = r.zz(); } else { e.qvx += r.zz(); e.qvy += r.zz(); } }
-    if (fl & F_ST) e.st = getState(r);
+    if (fl & F_ST) { e.st = getState(r); e.k = e.st.join(); }
     snap.set(id, e);
   }
   const aims = new Map(), na = r.vi();
@@ -6241,34 +6804,55 @@ function netClientFast(buf) {
   NET.hist.set(tick, snap);
   for (const t of NET.hist.keys()) if (t < tick - NET_SEND * NET_RING * 2) NET.hist.delete(t); else break;
   NET.latest = tick; NET.inAck = Math.max(NET.inAck, inAck);
-  NET.snaps.push({ tick, snap, at: performance.now(), aims });
-  if (NET.snaps.length > 10) NET.snaps.shift();
+  NET.snaps.push({ tick, snap, aims });
+  if (NET.snaps.length > NET_SNAPS) NET.snaps.shift();
+  // Where the host's clock is, from this arrival: the tick it was sent on, less our own clock (both in
+  // ticks). The snapshot that got here fastest gives the truest offset, so take the best of the last
+  // two seconds (a slower route, or the host's clock slipping in a hitch, is followed within two
+  // seconds); how far each arrival falls short of it is that packet's lateness, and the jitter is a
+  // running measure of that, quick to rise and slow to fall.
+  const nowMs = performance.now(), sample = tick - nowMs / 1000 / TICK, W = NET.offs || (NET.offs = []);
+  W.push([nowMs, sample]); while (W.length && nowMs - W[0][0] > 2000) W.shift();
+  let best = -Infinity; for (const w of W) if (w[1] > best) best = w[1];
+  NET.off = best;
+  const late = NET.off - sample;
+  NET.jit = (NET.jit || 0) + (late - (NET.jit || 0)) * (late > (NET.jit || 0) ? 0.3 : 0.03);
 }
-// each frame: draw the world a few ticks behind the newest snapshot, in between the two around it
+// Each frame: draw the world a little behind the host, in between the two snapshots around that
+// moment. The draw clock runs on at its own steady pace and is only eased toward where it should be
+// (the host's tick, less a delay of two snapshots plus about twice the jitter), so packets
+// arriving early or late never make it jump; a jump only happens if it's badly out (a stall).
 function netClientStep(dt) {
   if (time - NET.heard > NET_STALL && !NET.gone) { if (!NET.stallShown) { NET.stallShown = true; notice('Lost the host…', 2000); netLog('join: nothing from the host for', NET_STALL, 's'); } if (time - NET.heard > NET_DROP) netLost('Lost the host'); }
   else NET.stallShown = false;
   netSendInput(dt);
   const S = NET.snaps; if (!S.length) return;
-  const last = S[S.length - 1], est = last.tick + (performance.now() - last.at) / 1000 / TICK, rt = est - NET_DELAY;
+  NET.delay = clamp(NET_SEND * 2 + NET.jit * 2.2, NET_DELAY_MIN, NET_DELAY_MAX);
+  const target = performance.now() / 1000 / TICK + NET.off - NET.delay;
+  if (NET.rt === undefined || Math.abs(target - NET.rt) > 15) NET.rt = target;
+  else { NET.rt += dt / TICK; NET.rt += (target - NET.rt) * Math.min(1, dt * 1.5); }
+  const rt = NET.rt;
   let a = S[0], b = S[0];
   for (let i = 0; i < S.length; i++) { if (S[i].tick <= rt) { a = S[i]; b = S[i + 1] || S[i]; } }
   if (rt < S[0].tick) { a = b = S[0]; }
   const u = b.tick > a.tick ? clamp((rt - a.tick) / (b.tick - a.tick), 0, 1) : 1;
+  // past the newest snapshot (one's late): carry on along its speed for a moment
+  const ex = b.tick === a.tick ? clamp(rt - b.tick, 0, NET_EXTRA) * TICK : 0;
   for (const [id, e] of b.snap) {
     if (!e.st) continue;
     if (e.st[0] === 0 && !NET.pmap.get(e.st[5])) continue;
-    const ea = a.snap.get(id) || e, x = dqPos(ea.qx + (e.qx - ea.qx) * u), y = dqPos(ea.qy + (e.qy - ea.qy) * u);
+    const ea = a.snap.get(id) || e;
+    let x = dqPos(ea.qx + (e.qx - ea.qx) * u), y = dqPos(ea.qy + (e.qy - ea.qy) * u);
+    if (ex && (e.qvx || e.qvy)) { x += dqVel(e.qvx) * ex; y += dqVel(e.qvy) * ex; }
     let ball = NET.balls.get(id);
     if (!ball) { ball = mkBall(KINDS[e.st[0]] || 'num', x, y, {}); ball.netId = id; NET.balls.set(id, ball); ball.stKey = ''; }
-    const k = e.st.join();
-    if (k !== ball.stKey) netApplyState(ball, e.st), ball.stKey = k;
+    if (e.k !== ball.stKey) netApplyState(ball, e.st), ball.stKey = e.k;
     if (x !== ball.x || y !== ball.y) { gridDel(ball); rollBy(ball, x - ball.x, y - ball.y); ball.x = x; ball.y = y; gridPut(ball); }
     ball.vx = dqVel(ea.qvx + (e.qvx - ea.qvx) * u); ball.vy = dqVel(ea.qvy + (e.qvy - ea.qvy) * u);
   }
   for (const [id, ball] of NET.balls) if (!b.snap.has(id)) { netGone(ball); NET.balls.delete(id); }
   // whose ball is whose, now that the balls are here
-  for (const p of players) { if (p.netBallId) { const bl = NET.balls.get(p.netBallId); if (bl) { p.ball = bl; if (!p.alive && bl.owner === p) { p.alive = true; if (p === me) { me.spawnT = time; deathEl.hidden = true; deathPos = null; } } } } }
+  for (const p of players) { if (p.netBallId) { const bl = NET.balls.get(p.netBallId); if (bl) { p.ball = bl; if (!p.alive && bl.owner === p) { p.alive = true; if (p === me) { me.spawnT = time; uiHide(deathEl); deathPos = null; } } } } }
   for (const p of players) if (p.alive && (!p.ball || p.ball.dead)) p.alive = false;
   breaker = null; for (const bl of NET.balls.values()) if (bl.kind === 'breaker') breaker = bl;
   // the others' tells
@@ -6285,11 +6869,8 @@ function netApplyState(b, s) {
 // a ball the host no longer has: down a hole, off the edge, or just gone
 function netGone(b) {
   const p = nearest(pockets, b.x, b.y);
-  if (p && p.d < p.o.r + b.r) { p.o.flash = 1; if (inView(b.x, b.y, 60)) { sfxPot(p.o.x, p.o.y, b.owner === me); sinker(b, { p: p.o }); } }
-  else if (edgeDist(b.x, b.y) < b.r * 2) {
-    const l = Math.hypot(b.x - TC, b.y - TC) || 1, s = Math.hypot(b.vx, b.vy);
-    if (inView(b.x, b.y, 60)) sinker(b, { fall: true, ux: (b.x - TC) / l, uy: (b.y - TC) / l, sp: Math.min(500, s), cx0: cam.x, cy0: cam.y });
-  }
+  if (p && p.d < p.o.r + b.r) potFx(b, p.o, b.owner === me);
+  else if (edgeDist(b.x, b.y) < b.r * 2) { const l = Math.hypot(b.x - TC, b.y - TC) || 1; fallFx(b, (b.x - TC) / l, (b.y - TC) / l, b.owner === me); }
   b.dead = true; gridDel(b);
   if (b.owner && b.owner.ball === b) { b.owner.ball = null; b.owner.alive = false; }
 }
@@ -6304,16 +6885,16 @@ function netSendInput(dt) {
     const b = NET.sentAims.get(NET.inAck);
     w.vi(b ? NET.inAck : 0); w.u8(1);
     if (b) { let d = ang - b[0]; if (d > 32767) d -= 65536; if (d < -32768) d += 65536; w.zz(d); w.zz(pow - b[1]); } else { w.u16(ang); w.vi(pow); }
-    NET.sentAims.set(seq, [ang, pow]); if (NET.sentAims.size > 64) NET.sentAims.delete(NET.sentAims.keys().next().value);
+    capSet(NET.sentAims, seq, [ang, pow]);
   } else { w.vi(0); w.u8(0); }
   NET.link.fast(w.out());
 }
 function netShot(a) { NET.link.send({ t: 'shot', a: Math.atan2(a.dy, a.dx), p: a.pow }); }
-$('netBtn').addEventListener('click', () => { netStatus(''); openSheet('netSheet'); });
-$('netClose').addEventListener('click', closeSheets);
-$('netHost').addEventListener('click', () => netHost('arena'));
-$('netHostP').addEventListener('click', () => netHost('party'));
-$('netJoin').addEventListener('click', netJoin);
+onTap('netBtn', () => { netStatus(''); openSheet('netSheet'); });
+onTap('netClose', closeSheets);
+onTap('netHost', () => netHost('arena'));
+onTap('netHostP', () => netHost('party'));
+onTap('netJoin', netJoin);
 $('netCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); netJoin(); } });
 // ---------- experience, levels and challenges ----------
 // Every point you earn in a game is an XP point (debug doesn't count); levels need a little more XP
@@ -6357,9 +6938,10 @@ function addXP(n) {
 let lvlUpT = 0;
 function levelUp(L) {
   $('lvlUpN').textContent = `Level ${L}`; $('lvlUpT').textContent = 'Level up';
-  const el = $('lvlUp'); el.hidden = false; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
-  clearTimeout(lvlUpT); lvlUpT = setTimeout(() => { el.hidden = true; }, 1900);
+  const el = $('lvlUp'); uiHide(el); uiShow(el);
+  clearTimeout(lvlUpT); lvlUpT = setTimeout(() => uiHide(el), 1900);
   confetti(false); sfxTing(cam.x, cam.y, true); buzz(30);
+  const h = $('hudLvl'); h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
 }
 // something happened that challenges count: n more of kind k (or, for a 'max' kind, a new best of n)
 function ev(k, n = 1) {
@@ -6389,18 +6971,25 @@ function trackXP() {
 }
 function syncLevel() {
   const { L, into, need } = levelOf(prog.xp);
-  $('lvlN').textContent = L; $('lvlBtn').style.setProperty('--p', (into / need * 100).toFixed(1));
+  const pc = (into / need * 100).toFixed(1);
+  $('lvlN').textContent = L; $('lvlBtn').style.setProperty('--p', pc);
+  // the same in the HUD
+  const h = $('hudLvl'); $('hudLvlN').textContent = L; h.style.setProperty('--p', pc); h.setAttribute('aria-label', `Level ${L}, ${into} of ${need} XP`);
   $('lvlDot').hidden = prog.seen; $('chDot').hidden = prog.seen;
-  if ($('chSheet').hidden) return;
+  if (!$('chSheet').hidden) syncCh();
+}
+// the challenges sheet: filled as it opens (openSheet, before it fades in), and kept up while it's open
+function syncCh() {
+  const { L, into, need } = levelOf(prog.xp);
   $('chLvl').textContent = `Level ${L}`; $('chBar').style.width = `${(into / need * 100).toFixed(1)}%`; $('chXp').textContent = `${into} / ${need} XP`;
   $('chList').innerHTML = prog.ch.map(c => {
     const def = CHALLENGES.find(d => d.k === c.k);
     return `<div class="ch${c.done ? ' done' : ''}"><span class="cm"><span class="ct">${def.t(c.goal)}</span><span class="cp"><i style="width:${(c.at / c.goal * 100).toFixed(1)}%"></i></span><span class="cn">${c.done ? 'Done' : `${c.at} / ${c.goal}`}</span></span><span class="cx">+${c.xp} XP</span></div>`;
   }).join('');
 }
-for (const id of ['lvlBtn', 'chBtn']) $(id).addEventListener('click', () => { openSheet('chSheet'); prog.seen = true; saveProg(); syncLevel(); });
-$('chDone').addEventListener('click', closeSheets);
-$('chClose').addEventListener('click', closeSheets);
+for (const id of ['lvlBtn', 'chBtn']) $(id).addEventListener('click', () => { prog.seen = true; saveProg(); syncLevel(); openSheet('chSheet'); });
+onTap('chDone', closeSheets);
+onTap('chClose', closeSheets);
 syncLevel();
 // the party picker: every game as a switch; at least one stays on, and they play in this order
 let picks = Object.keys(ROUNDS);
@@ -6429,11 +7018,15 @@ document.addEventListener('click', e => {
 });
 $('partyBots').outerHTML = botStepper(); syncBots();
 const picksEl = $('partyPicks');
+// the fades show only at an edge with more past it
+const picksFade = () => { const e = picksEl, t = e.scrollTop, m = e.scrollHeight - e.clientHeight; e.classList.toggle('fa', t > 2); e.classList.toggle('fb', t < m - 2); };
+picksEl.addEventListener('scroll', picksFade, { passive: true }); new ResizeObserver(picksFade).observe(picksEl);   // (and as it's shown, or the screen changes)
 picksEl.innerHTML = Object.values(ROUNDS).map(r => `<button type="button" role="switch" data-k="${r.kind}" aria-checked="false"><span>${r.name}<small>${r.short}</small></span><i></i></button>`).join('');
 function syncPicks() {
   const on = partyPicks();
   for (const b of picksEl.children) b.setAttribute('aria-checked', on.includes(b.dataset.k) ? 'true' : 'false');
   $('partyGo').textContent = `Start party · ${on.length} game${on.length > 1 ? 's' : ''}`;
+  requestAnimationFrame(picksFade);
 }
 picksEl.addEventListener('click', e => {
   const b = e.target.closest('[data-k]'); if (!b) return;
@@ -6442,23 +7035,23 @@ picksEl.addEventListener('click', e => {
   store.set('party', JSON.stringify(picks));
   syncPicks(); sfxBall(500, cam.x, cam.y, true); buzz(6);
 });
-$('partyGo').addEventListener('click', () => { closeSheets(); go('party'); });
-$('partyHost').addEventListener('click', () => { netStatus(''); openSheet('netSheet'); });
-$('partyClose').addEventListener('click', closeSheets);
-$('skinBtn').addEventListener('click', () => openSheet('skinSheet'));
-$('setBtn').addEventListener('click', () => openSheet('setSheet'));
-$('skinDone').addEventListener('click', closeSheets);
-$('setDone').addEventListener('click', closeSheets);
+onTap('partyGo', () => { closeSheets(); go('party'); });
+onTap('partyHost', () => { netStatus(''); openSheet('netSheet'); });
+onTap('partyClose', closeSheets);
+onTap('skinBtn', () => openSheet('skinSheet'));
+onTap('setBtn', () => openSheet('setSheet'));
+onTap('skinDone', closeSheets);
+onTap('setDone', closeSheets);
 
-$('howBtn').addEventListener('click', () => { openSheet('howSheet'); $('tutNext').focus(); });
-$('howClose').addEventListener('click', closeSheets);
-$('tutNext').addEventListener('click', () => { if (tutorial.next()) closeSheets(); });
+onTap('howBtn', () => { openSheet('howSheet'); $('tutNext').focus(); });
+onTap('howClose', closeSheets);
+onTap('tutNext', () => { if (tutorial.next()) closeSheets(); });
 youBall?.start(); menuBalls?.start();
-$('resume').addEventListener('click', () => { $('start').hidden = true; document.body.classList.remove('menu'); });
-$('leave').addEventListener('click', () => location.reload());
-$('helpBtn').addEventListener('click', () => {
+onTap('resume', () => { uiHide($('start')); document.body.classList.remove('menu'); });
+onTap('leave', () => location.reload());
+onTap('helpBtn', () => {
   const s = $('start');
-  if (s.hidden) { s.hidden = false; s.classList.remove('leaving'); document.body.classList.add('menu'); for (const id of ['modes', 'play', 'netBtn']) $(id).hidden = started; document.querySelector('.pick').hidden = started; $('resumeRow').hidden = !started; }
+  if (!shown(s)) { uiShow(s); s.classList.remove('leaving'); document.body.classList.add('menu'); for (const id of ['modes', 'play', 'netBtn']) $(id).hidden = started; document.querySelector('.pick').hidden = started; $('resumeRow').hidden = !started; }
 });
 
 const shiftB = [], shiftX = new Float64Array(600), shiftY = new Float64Array(600);
@@ -6487,9 +7080,12 @@ function frame(now) {
   updateHud(dt);
   requestAnimationFrame(frame);
 }
+document.addEventListener('visibilitychange', () => { if (NET.role) netLog('page', document.hidden ? 'hidden (the phone may drop the link while it sleeps)' : 'visible'); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) last = performance.now(); });
 requestAnimationFrame(frame);
 })();
 </script>
 </body>
 </html>
+
+</body></html>
