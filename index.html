@@ -96,6 +96,9 @@ body.menu .hud{opacity:0;transition:opacity .2s}
 #rbTime{font:400 26px/1.1 var(--f-title);color:var(--text);margin:1px 0 1px}
 #rbTime.low{color:var(--danger)}
 #roundBar b{font-weight:700}
+/* while you aim they step back, so they don't pull your eye from the shot */
+#board,#mini{transition:opacity .15s ease-out}
+body.aiming #board,body.aiming #mini{opacity:.4}
 #board{list-style:none;margin:0;padding:6px 8px;background:rgba(6,24,30,.5);border-radius:var(--r);font-size:13px;font-weight:600;line-height:1.45;font-variant-numeric:tabular-nums;color:var(--muted);text-shadow:none}
 #board li{display:flex;justify-content:space-between;gap:8px;white-space:nowrap}
 #board li span:first-child{overflow:hidden;text-overflow:ellipsis}
@@ -503,6 +506,10 @@ const cv = document.getElementById('game'), ctx = cv.getContext('2d', { alpha: f
 const mcv = document.getElementById('marks'), kctx = mcv.getContext('2d');
 const gc = document.getElementById('balls');
 const fxc = document.getElementById('fx'), fctx = fxc.getContext('2d');
+// whether anything was drawn on the effects layer this frame (any fill, stroke, image or text marks
+// it), whether the last frame left anything on it, and whether it's showing
+let fxInk = true, fxWas = true, fxShown = true;
+for (const k of ['fill', 'stroke', 'fillRect', 'strokeRect', 'drawImage', 'fillText', 'strokeText']) { const f = fctx[k]; fctx[k] = function (...a) { fxInk = true; return f.apply(this, a); }; }
 const mini = document.getElementById('mini'), mctx = mini.getContext('2d');
 const MAX_DPR = 2;                       // past this, more pixels cost more than they show
 let DPR = 1, VW = 0, VH = 0, ZOOM = 1, frameN = 0;
@@ -2368,11 +2375,12 @@ function drawHoleLabels(g) {
     const t = holeLabel(p); if (!t) continue;
     let o = p._lbl;
     if (!o || o.text !== t || o.tok !== HL.tok) o = p._lbl = { text: t, tok: HL.tok, size: HOLE_LABEL_PX, color: '#ffffff', border: '#000000', w: 0 };
+    if (sprGL) { tagAt(g, paintedTag(o), p.x, p.y - p.r - HOLE_LABEL_GAP / KY, HOLE_FADE); continue; }
     if (!m) { m = g.getTransform(); g.textAlign = 'left'; g.textBaseline = 'middle'; }
     g.setTransform(m.a, 0, 0, m.a, m.a * p.x + m.e, m.d * (p.y - p.r) + m.f - HOLE_LABEL_GAP * m.a);
-    paintTag(g, o);
+    g.globalAlpha = HOLE_FADE; paintTag(g, o);
   }
-  if (m) { g.setTransform(m); g.textAlign = 'center'; }
+  if (m) { g.setTransform(m); g.textAlign = 'center'; g.globalAlpha = 1; }
 }
 // The game's painted text on the table (the floating numbers, the holes' labels): the title font in a
 // solid border with a hard drop shadow down and to the right, like the HUD's, and the points token in
@@ -2392,30 +2400,56 @@ function paintTag(g, o) {
 function drawFloat(g, f) { f.tok = typeof f.text === 'number'; paintTag(g, f); }
 
 // ---------- sound ----------
-// Everything is synthesised: no files. Each sound is a few layers (a filtered noise burst for the
-// attack, a short tone for the body), panned by where it happens on screen and quietened with
-// distance from the camera. A compressor on the master stops pile-ups from clipping, and a voice
-// cap stops a big break from spawning hundreds of nodes.
-//
-// Mixing: anything you caused (your shot, your ball, balls you set rolling) plays on the front bus at
-// full volume. Everything else plays on a background bus that is quieter, slightly muffled, only
-// heard on screen, and rationed to a few sounds a second; it also ducks briefly whenever you shoot
-// or hit something, so your own play always cuts through.
-const MASTER_VOL = 0.9;
-let actx = null, master = null, bgBus = null, noiseBuf = null, voices = 0;
+// Everything is synthesised: no files. It's built the way game sound designers work:
+// - Layers: a sound is a short bright attack (what you hear first), a body that gives it its tone and,
+//   for heavy things, a low thump. Game hits stay a few hundred ms so they don't tire you out.
+// - Phones: their speakers play almost nothing under ~220 Hz, so every low layer is a ladder of
+//   harmonics (HARM) they can play, and the ear fills in the low note that isn't there (the "missing
+//   fundamental"). The 4-5 kHz band, which phones make harsh, is kept clear.
+// - Physics where it's cheap: a ball-on-ball click comes from a contact of a few hundred µs (Hertz),
+//   shorter for a harder hit (∝ v^-1/5) and longer for a bigger ball (∝ its radius): a harder hit is
+//   brighter by v^(1/5), a heavy ball lower, and how loud goes with how hard it's stopped (∝ v^1.2).
+// - Same but different: the sounds you hear all the time (clicks, cushions, the cue, pots) vary a
+//   little in pitch and level every time; the ones you learn to listen for (rewards, the countdown,
+//   ticks) never change.
+// - One key: everything with a pitch is in C major, and anything that climbs (a points streak, a
+//   fanfare) climbs the C major pentatonic, so rewards on top of each other always sound right.
+// - A pecking order: your own play is on the front bus at full level; everyone else's is quieter,
+//   muffled, on screen only and rationed (the back bus), and dips under your shots and hits. A big
+//   moment (your pot, a bomb, a special, a reward) pushes it down further for longer. Dips don't
+//   stack (the deepest one wins), and when too much is going on the back bus's sounds go first.
+// - Working together, not one-upping each other: every pitched sound plays the same soft mallet
+//   (mallet), in the same register under the clicks; everything plays in the same small room (a
+//   shared reverb, roomIR), which is what makes separate sounds feel like one scene; and they all sit
+//   in one narrow loudness band (about -20 to -28 LUFS momentary, measured), so the big moments are a
+//   step up, not a shout. The quiet information ticks sit below that. The master ends in a limiter.
+// - What you can't always see gets a sound: the shot's power steps (with the buzz), the shot coming
+//   ready, the 3-2-1-Go, a round's last seconds and its end.
+const MASTER_VOL = 1.75;
+// each sound's level, set by measuring them (sfx loudness, momentary max): what's rare and matters most is loudest
+const LV = { ball: 0.79, cushion: 0.73, cue: 0.42, pot: 0.19, crack: 0.375, boom: 0.2, fall: 0.21, ui: 0.13, count: 0.155, tick: 0.16, bell: 0.073, fan: 0.087, clink: 0.11 };
+let actx = null, master = null, bgBus = null, noiseBuf = null, HARM = null, voices = 0;
 const lastAt = { ball: 0, cushion: 0, pot: 0, bball: 0, bcushion: 0, bpot: 0 };
-const BG_GAIN = 0.32, BG_RATE = 5;                     // background loudness, sounds per second
-let bgTokens = BG_RATE, bgTokT = 0;
+const BG_GAIN = 0.25, BG_RATE = 3;                     // background loudness, sounds per second
+let bgTokens = BG_RATE, bgTokT = 0, duckD = 0, duckEnd = 0;
 function bgAllow() {
   const t = actx.currentTime; bgTokens = Math.min(BG_RATE, bgTokens + (t - bgTokT) * BG_RATE); bgTokT = t;
   if (bgTokens < 1) return false; bgTokens -= 1; return true;
 }
-function duck() {
-  if (!bgBus) return; const t = actx.currentTime, g = bgBus.gain;
-  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(BG_GAIN * 0.35, t + 0.02); g.linearRampToValueAtTime(BG_GAIN, t + 0.7);
+// push the back bus down by `depth` (0-1), hold it `hold` s, let it back up over `rel` s; a deeper
+// dip that's still on wins, so they don't stack
+function duck(depth = 0.65, hold = 0, rel = 0.7) {
+  if (!bgBus) return; const t = actx.currentTime;
+  if (t < duckEnd && depth < duckD) return;
+  duckD = depth; duckEnd = t + 0.015 + hold + rel * 0.5;
+  const g = bgBus.gain, lo = BG_GAIN * (1 - depth);
+  g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(lo, t + 0.015); g.setValueAtTime(lo, t + 0.015 + hold); g.linearRampToValueAtTime(BG_GAIN, t + 0.015 + hold + rel);
 }
-// can it be heard: where it plays (pan, volume), or null when out of earshot or too many sounds are going
-const hear = (x, y, own, cap = 26) => actx && voices <= cap ? place(x, y, own) : null;
+const bigDuck = () => duck(0.85, 0.15, 1);             // a big moment: everyone else right down for a second
+// can it be heard: where it plays (pan, volume), or null when out of earshot or too many sounds are
+// going (everyone else's give way first)
+const hear = (x, y, own, cap = own ? 24 : 12) => actx && voices <= cap ? place(x, y, own) : null;
 // a special going off is worth hearing from anywhere: placed if it's near, half strength in the middle if not
 const heardAnyway = (x, y) => actx ? place(x, y, true) || { pan: 0, vol: 0.5 } : null;
 // one of each kind at a time: not again within `gap` s, and others' sounds also spend the background budget
@@ -2430,14 +2464,24 @@ function wakeAudio() { if (!actx) initAudio(); if (actx && actx.state === 'suspe
 function initAudio() {
   try {
     actx = new (window.AudioContext || window.webkitAudioContext)();
+    // the master: the deepest rumble (no phone plays it, and it eats headroom) cut, a gentle compressor
+    // to glue things together, then a limiter so a pile-up can't clip
+    const hp = actx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 35; hp.Q.value = 0.7;
     const comp = actx.createDynamicsCompressor();
-    comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 4; comp.attack.value = 0.002; comp.release.value = 0.12;
+    comp.threshold.value = -18; comp.knee.value = 8; comp.ratio.value = 3; comp.attack.value = 0.003; comp.release.value = 0.15;
+    const lim = actx.createDynamicsCompressor();
+    lim.threshold.value = -4; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.08;
     master = actx.createGain(); master.gain.value = settings.sound ? MASTER_VOL : 0;
-    master.connect(comp).connect(actx.destination);
+    master.connect(hp).connect(comp).connect(lim).connect(actx.destination);
+    const room = actx.createConvolver(), send = actx.createGain(); room.buffer = roomIR(actx); send.gain.value = 0.22;
+    master.connect(send).connect(room).connect(hp);
     const lp = actx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200; lp.Q.value = 0.5;
     bgBus = actx.createGain(); bgBus.gain.value = BG_GAIN; bgBus.connect(lp).connect(master);
     noiseBuf = actx.createBuffer(1, actx.sampleRate * 0.6, actx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    // the low layers' waveform: the note and its 2nd-5th harmonics, which a phone plays when it can't play the note
+    HARM = actx.createPeriodicWave(new Float32Array(6), new Float32Array([0, 1, 0.7, 0.45, 0.28, 0.16]));
+    duckD = duckEnd = 0;
   } catch (e) { actx = null; }
 }
 // pan and loudness by where it is: yours carry a little past the screen edge, others stop at it
@@ -2469,121 +2513,194 @@ function noise(t, dur, type, freq, q, peak, decay, dest, attack = 0.001, f1 = 0)
   s.connect(f).connect(g).connect(dest);
   s.start(t, Math.random() * 0.4); s.stop(t + dur);
 }
+// a tone gliding f0 to f1 (`type` an oscillator type, or a PeriodicWave)
 function tone(t, type, f0, f1, peak, decay, dest, attack = 0.001) {
   const o = actx.createOscillator(), g = actx.createGain();
-  o.type = type; o.frequency.setValueAtTime(f0, t);
+  if (typeof type === 'string') o.type = type; else o.setPeriodicWave(type);
+  o.frequency.setValueAtTime(f0, t);
   if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + attack + decay);
   env(g, t, peak, attack, decay);
   o.connect(g).connect(dest); o.start(t); o.stop(t + attack + decay + 0.02);
 }
-// ball on ball: a hard, bright phenolic click. Harder hits are louder and slightly higher.
+// a low thud a phone can carry: its harmonics, not just the note
+const thump = (t, f0, f1, peak, decay, dest, attack = 0.002) => tone(t, HARM, f0, f1, peak, decay, dest, attack);
+// the one instrument every pitched sound plays, so they sound like a set rather than each one shouting:
+// a soft mallet (a round fundamental and a brief hint of the strike above it), between C5 and E6,
+// under the clicks, which keep 2-4 kHz to themselves
+function mallet(t, f, v, decay, d) { tone(t, 'sine', f, f, v, decay, d, 0.006); tone(t, 'sine', f * 3, f * 3, v * 0.08, decay * 0.25, d, 0.004); }
+// two more voices from the same family (same key, same room, same soft starts), so kinds of sound can be
+// told apart: a glassy bell for the specials and sparkles (its partials a bell's, 2.76 and 5.4 times
+// up, ringing longer), and a soft plucked string for the timers and countdowns (a triangle whose
+// brightness closes down fast, like a string after it's plucked)
+function glass(t, f, v, decay, d) {
+  v *= 0.89;   // (matched to the mallet's loudness, measured)
+  tone(t, 'sine', f, f, v, decay * 1.3, d, 0.004); tone(t, 'sine', f * 2.76, f * 2.76, v * 0.18, decay * 0.6, d, 0.004); tone(t, 'sine', f * 5.4, f * 5.4, v * 0.05, decay * 0.3, d, 0.004);
+}
+function pluck(t, f, v, decay, d) {
+  v *= 1.32;   // (matched to the mallet's loudness, measured)
+  const o = actx.createOscillator(), lp = actx.createBiquadFilter(), g = actx.createGain();
+  o.type = 'triangle'; o.frequency.value = f; lp.type = 'lowpass'; lp.Q.value = -3;
+  lp.frequency.setValueAtTime(f * 6, t); lp.frequency.exponentialRampToValueAtTime(f * 1.2, t + decay * 0.6);
+  env(g, t, v, 0.003, decay); o.connect(lp).connect(g).connect(d); o.start(t); o.stop(t + decay + 0.03);
+}
+// the room every sound plays in (a short soft reverb, the same for all): what makes them one scene
+function roomIR(ctx) {
+  const n = Math.floor(ctx.sampleRate * 0.45), b = ctx.createBuffer(2, n, ctx.sampleRate), pre = Math.floor(ctx.sampleRate * 0.008);
+  for (let c = 0; c < 2; c++) { const d = b.getChannelData(c); let y = 0; for (let i = pre; i < n; i++) { y += 0.25 * ((Math.random() * 2 - 1) - y); d[i] = y * Math.exp(-(i - pre) / (ctx.sampleRate * 0.09)); } }
+  return b;
+}
+// a little random pitch (± cents) and level (± dB) for each play of a sound heard all the time
+const vary = (c, db) => [Math.pow(2, (Math.random() * 2 - 1) * c / 1200), Math.pow(10, (Math.random() * 2 - 1) * db / 20)];
+// C major pentatonic: step i up from C6
+const PENTA = [0, 2, 4, 7, 9];
+const penta = i => 1046.5 * Math.pow(2, Math.floor(i / 5) + PENTA[i % 5] / 12);
+// ball on ball: a hard phenolic click
 function sfxBall(v, x, y, own, hv = 0) {
   if (v < (own ? 30 : 220)) return;
-  const pl = hear(x, y, own, 24); if (!pl || !rationed(own ? 'ball' : 'bball', own ? 0.018 : 0.06, own)) return;
-  if (own) duck();
-  const t = actx.currentTime, k = Math.min(1, v / 1400), vol = (0.04 + 0.54 * k * k) * pl.vol, dest = out(pl.pan, t, 0.12, own);
-  const f = (2600 + 1400 * k + Math.random() * 500) * (1 - 0.4 * hv);
-  noise(t, 0.04, 'bandpass', f, 1.4, vol, 0.012, dest);
+  const pl = hear(x, y, own); if (!pl || !rationed(own ? 'ball' : 'bball', own ? 0.018 : 0.06, own)) return;
+  if (own) duck(0.55, 0, 0.5);
+  const [vp, vg] = vary(60, 1.5), t = actx.currentTime, k = Math.min(1, v / 1400), dest = out(pl.pan, t, 0.12, own);
+  const vol = LV.ball * (0.025 + 0.6 * Math.pow(k, 1.2)) * pl.vol * vg;
+  // brighter the harder it's hit, lower the heavier the ball; kept under the harsh band
+  const f = Math.min(3900, 3300 * Math.pow(Math.max(v, 60) / 800, 0.2)) * (1 - 0.35 * hv) * vp;
+  noise(t, 0.03, 'bandpass', f, 1.5, vol, 0.01, dest);
   tone(t, 'sine', f * 0.55, f * 0.5, vol * (0.55 + 0.3 * hv), 0.035 + 0.03 * hv, dest);
-  tone(t, 'triangle', (820 + 200 * k) * (1 - 0.45 * hv), 700 * (1 - 0.45 * hv), vol * (0.18 + 0.3 * hv), 0.05 + 0.05 * hv, dest);
+  tone(t, 'triangle', (820 + 200 * k) * (1 - 0.45 * hv) * vp, 700 * (1 - 0.45 * hv) * vp, vol * (0.18 + 0.3 * hv), 0.05 + 0.05 * hv, dest);
 }
-// ball into a cushion: soft rubber thud with a little knock on top
+// ball into a cushion: the rubber giving, with a little knock on top
 function sfxCushion(v, x, y, own, hv = 0) {
   if (v < (own ? 60 : 320)) return;
-  const pl = hear(x, y, own, 24); if (!pl || !rationed(own ? 'cushion' : 'bcushion', own ? 0.03 : 0.12, own)) return;
-  const t = actx.currentTime, k = Math.min(1, v / 1400), vol = (0.04 + 0.34 * k * k) * pl.vol, dest = out(pl.pan, t, 0.15, own);
-  noise(t, 0.12, 'lowpass', (500 + 500 * k) * (1 - 0.35 * hv), 0.7, vol, 0.07, dest, 0.003);
-  tone(t, 'sine', (150 + 60 * k) * (1 - 0.4 * hv), 90 * (1 - 0.4 * hv), vol * (0.8 + 0.4 * hv), 0.09 + 0.06 * hv, dest, 0.002);
+  const pl = hear(x, y, own); if (!pl || !rationed(own ? 'cushion' : 'bcushion', own ? 0.03 : 0.12, own)) return;
+  const [vp, vg] = vary(80, 1.5), t = actx.currentTime, k = Math.min(1, v / 1400), dest = out(pl.pan, t, 0.15, own);
+  const vol = LV.cushion * (0.03 + 0.34 * Math.pow(k, 1.2)) * pl.vol * vg, lo = (1 - 0.35 * hv) * vp;
+  noise(t, 0.1, 'lowpass', (800 + 700 * k) * lo, 0.7, vol * 0.8, 0.05, dest, 0.002);
+  thump(t, (170 + 60 * k) * lo, 110 * lo, vol, 0.08 + 0.05 * hv, dest);
 }
-// cue tip on the cue ball: short leathery tock
+// cue tip on the cue ball: a leathery tock with a bite at the start; a hard shot has weight behind it
 function sfxCue(pow, x, y, own) {
   if (!actx) return;
-  const pl = own ? { pan: 0, vol: 1 } : place(x, y, false); if (!pl) return;
-  if (!own && !bgAllow()) return;
-  if (own) duck();
-  const t = actx.currentTime, vol = (0.12 + 0.35 * pow) * pl.vol, dest = out(pl.pan, t, 0.1, own);
+  if (!own) return;                                     // (everyone else's shots: the most frequent sound in a game, and it tells you nothing)
+  const pl = { pan: 0, vol: 1 };
+  duck(0.6, 0.02, 0.5);
+  const t = actx.currentTime, vol = LV.cue * (0.12 + 0.35 * pow) * pl.vol, dest = out(pl.pan, t, 0.1, own);
   noise(t, 0.05, 'bandpass', 1300 + 500 * pow, 1.1, vol, 0.02, dest);
   tone(t, 'sine', 520 + 200 * pow, 380, vol * 0.6, 0.045, dest);
 }
-// into the hole: a hollow drop, then the ball rattling down the shaft
+// into the hole. What makes a sound feel like a win, from the research on slot machine and game reward
+// sounds: short, bright, rising, consonant, and exactly on the moment (that's when the reward lands).
+// So: a round "thock" as it drops, then two soft notes up a fifth (C5, G5). Simple on purpose.
 function sfxPot(x, y, own, far) {
   if (!actx || voices > 26) return;
   const pl = place(x, y, own) || (far ? { pan: clamp((x - cam.x) * ZOOM / (VW / 2) * 0.6, -0.85, 0.85), vol: 0.4 } : null);
-  if (!pl || !rationed(own ? 'pot' : 'bpot', own ? 0.05 : 0.25, own, false)) return;
-  if (own) duck();
-  const t = actx.currentTime, vol = 0.5 * pl.vol, dest = out(pl.pan, t, 0.6, own);
-  noise(t, 0.08, 'bandpass', 900, 2, vol * 0.5, 0.04, dest);
-  tone(t, 'sine', 240, 80, vol, 0.26, dest, 0.004);
-  tone(t + 0.01, 'triangle', 120, 55, vol * 0.4, 0.3, dest, 0.01);
-  for (let i = 0; i < 3; i++) {
-    const tt = t + 0.12 + i * (0.07 - i * 0.012) + Math.random() * 0.01;
-    noise(tt, 0.03, 'bandpass', 1800 - i * 300, 3, vol * (0.22 - i * 0.06), 0.015, dest);
-  }
+  if (!pl || !rationed(own ? 'pot' : 'bpot', own ? 0.05 : 1.2, own, false)) return;
+  if (own) bigDuck();
+  const [vp, vg] = vary(30, 1), t = actx.currentTime, vol = LV.pot * pl.vol * vg, dest = out(pl.pan, t, 0.45, own);
+  thump(t, 300 * vp, 130 * vp, vol, 0.14, dest, 0.006);
+  noise(t, 0.03, 'lowpass', 900 * vp, 0.7, vol * 0.25, 0.02, dest, 0.003);
+  mallet(t + 0.06, 523.25, vol * 0.5, 0.16, dest); mallet(t + 0.12, 784, vol * 0.5, 0.28, dest);
 }
 // the gold ball erupting out of a hole: a soft pop and a quick rising chime
 function sfxErupt(x, y) {
   const pl = hear(x, y, true); if (!pl) return;
-  const t = actx.currentTime, vol = 0.4 * pl.vol, dest = out(pl.pan, t, 0.5, true);
+  const t = actx.currentTime, vol = 0.18 * pl.vol, dest = out(pl.pan, t, 0.5, true);
   noise(t, 0.06, 'bandpass', 700, 1.5, vol * 0.5, 0.04, dest);
-  tone(t, 'sine', 180, 520, vol * 0.8, 0.16, dest, 0.004);
-  tone(t + 0.07, 'sine', 880, 1320, vol * 0.35, 0.22, dest, 0.004);
+  thump(t, 200, 520, vol * 0.6, 0.16, dest, 0.004);
+  glass(t + 0.07, 784, vol * 0.35, 0.18, dest); glass(t + 0.13, 1046.5, vol * 0.35, 0.25, dest);
 }
-// a crack landing on the Breaker: a deep knock with a splintering top
+// a crack landing on the Breaker: a deep knock, the wood of it, and a splintering top
 function sfxCrack(x, y, own) {
   const pl = hear(x, y, own); if (!pl) return;
-  const t = actx.currentTime, vol = 0.55 * pl.vol, dest = out(pl.pan, t, 0.3, own);
-  noise(t, 0.05, 'highpass', 2600, 0.8, vol * 0.5, 0.03, dest);
-  tone(t, 'sine', 160, 60, vol, 0.2, dest, 0.003);
+  const [vp, vg] = vary(60, 1), t = actx.currentTime, vol = LV.crack * pl.vol * vg, dest = out(pl.pan, t, 0.3, own);
+  noise(t, 0.05, 'bandpass', 3000 * vp, 0.9, vol * 0.45, 0.03, dest);
+  noise(t, 0.06, 'bandpass', 700 * vp, 2, vol * 0.6, 0.04, dest);
+  thump(t, 160 * vp, 60 * vp, vol, 0.2, dest, 0.003);
 }
 // specials going off
 function sfxMagnet(x, y, own) {
-  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.8, own);
-  tone(t, 'sawtooth', 90, 140, 0.18 * pl.vol, 0.7, d, 0.05); tone(t, 'sine', 220, 330, 0.25 * pl.vol, 0.6, d, 0.02);
+  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.8, own); if (own) bigDuck();
+  tone(t, 'sawtooth', 90, 140, 0.091 * pl.vol, 0.7, d, 0.05); thump(t, 220, 330, 0.112 * pl.vol, 0.6, d, 0.02);
 }
 function sfxFrost(x, y, own) {
-  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.7, own);
-  noise(t, 0.4, 'highpass', 4000, 0.7, 0.35 * pl.vol, 0.35, d, 0.005);
-  for (let i = 0; i < 3; i++) tone(t + i * 0.05, 'sine', 1800 + i * 600, 2400 + i * 600, 0.12 * pl.vol, 0.25, d, 0.002);
+  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.7, own); if (own) bigDuck();
+  noise(t, 0.4, 'bandpass', 5500, 0.8, 0.067 * pl.vol, 0.35, d, 0.02);
+  [880, 1175, 1318.5].forEach((f, i) => glass(t + i * 0.05, f, 0.067 * pl.vol, 0.3, d));
 }
 function sfxGold(x, y, own) {
-  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.7, own);
-  [1046, 1318, 1568, 2093].forEach((f, i) => tone(t + i * 0.06, 'triangle', f, f, 0.16 * pl.vol, 0.25, d, 0.003));
+  const pl = heardAnyway(x, y); if (!pl) return; const t = actx.currentTime, d = out(pl.pan, t, 0.7, own); if (own) bigDuck();
+  [523.25, 659.25, 784, 1046.5].forEach((f, i) => glass(t + i * 0.06, f, 0.07 * pl.vol, 0.3, d));
 }
 function sfxShatter(x, y, own, hard) {
   const pl = hear(x, y, own); if (!pl) return;
-  const t = actx.currentTime, d = out(pl.pan, t, 0.4, own), v = (hard ? 0.45 : 0.2) * pl.vol;
-  noise(t, 0.2, 'bandpass', 5200, 1.2, v, 0.15, d); tone(t, 'sine', 2600, 1400, v * 0.4, 0.12, d, 0.002);
+  const [vp, vg] = vary(80, 1.5), t = actx.currentTime, d = out(pl.pan, t, 0.4, own), v = (hard ? 0.24 : 0.11) * pl.vol * vg;
+  noise(t, 0.2, 'bandpass', 5500 * vp, 1, v, 0.15, d, 0.004); tone(t, 'sine', 1300 * vp, 700 * vp, v * 0.4, 0.12, d, 0.004);
 }
-// points landing in your score: a small glassy clink that steps up in pitch on a streak
+// points landing in your score: a small glassy clink that climbs the pentatonic on a streak
 function sfxClink(step, big) {
   if (!actx) return;
-  const t = actx.currentTime, dest = out(-0.55, t, 0.3, true), f = 1046 * Math.pow(2, Math.min(step, 12) / 12);
-  tone(t, 'sine', f, f, 0.16 + 0.1 * big, 0.14, dest, 0.002);
-  tone(t, 'sine', f * 2.01, f * 2.01, 0.05, 0.08, dest, 0.002);
-  tone(t, 'triangle', f * 0.5, f * 0.5, 0.05 * big, 0.2, dest, 0.004);
+  const t = actx.currentTime, dest = out(-0.55, t, 0.3, true), f = penta(Math.min(step, 10)) / 2, v = LV.clink * (1 + 0.5 * big);
+  mallet(t, f, v, 0.18, dest);
+  if (big) mallet(t, f / 2, v * 0.3, 0.22, dest);
 }
-// bomb: low thump, a noise blast that closes down, and a sub drop
+// bomb: the crack of it, a low thump (and its harmonics, for phones), a noise blast closing down, a sub drop
 function sfxBoom(x, y, own) {
   const pl = hear(x, y, true, Infinity); if (!pl) return;
-  const t = actx.currentTime, vol = (own ? 0.9 : 0.6) * pl.vol, dest = out(pl.pan, t, 1, own);
+  bigDuck();
+  const t = actx.currentTime, vol = LV.boom * (own ? 1 : 0.67) * pl.vol, dest = out(pl.pan, t, 1, own);
+  noise(t, 0.15, 'bandpass', 900, 1.2, vol * 0.8, 0.1, dest, 0.002);
   noise(t, 0.62, 'lowpass', 3200, 0.8, vol * 0.7, 0.6, dest, 0.004, 180);
+  thump(t, 120, 50, vol * 0.9, 0.4, dest, 0.003);
   tone(t, 'sine', 110, 38, vol, 0.55, dest, 0.003);
-  tone(t, 'square', 70, 40, vol * 0.08, 0.2, dest, 0.002);
 }
-// the twinkle: a bright little bell, two partials, quick and high
+// the twinkle: a bright little bell, two partials a fifth apart, quick and high
 function sfxTing(x, y, own) {
   if (!actx || voices > 26) return;
   const pl = place(x, y, own) || { pan: 0, vol: own ? 1 : 0 }; if (!pl.vol) return;
-  const t = actx.currentTime, vol = 0.22 * pl.vol, dest = out(pl.pan, t, 0.7, own);
-  tone(t, 'sine', 2637, 2600, vol, 0.5, dest, 0.003);
-  tone(t, 'sine', 3951, 3900, vol * 0.4, 0.3, dest, 0.003);
+  const t = actx.currentTime, vol = 0.081 * pl.vol, dest = out(pl.pan, t, 0.6, own);
+  glass(t, 1318.5, vol, 0.35, dest); glass(t + 0.05, 1975.5, vol * 0.45, 0.25, dest);
 }
-// off the edge: a breathy whoosh dropping away
+// off the edge: a soft breathy whoosh dropping away, and a pure tone falling with it
 function sfxFall(x, y, own) {
   const pl = hear(x, y, own); if (!pl) return;
-  const t = actx.currentTime, vol = 0.45 * pl.vol, dest = out(pl.pan, t, 0.6, own);
-  noise(t, 0.5, 'bandpass', 1400, 1.2, vol * 0.5, 0.45, dest, 0.02, 220);
-  tone(t, 'sine', 380, 70, vol * 0.6, 0.45, dest, 0.01);
+  const [vp, vg] = vary(60, 1), t = actx.currentTime, vol = LV.fall * pl.vol * vg, dest = out(pl.pan, t, 0.6, own);
+  noise(t, 0.6, 'lowpass', 1100 * vp, 0.5, vol * 0.6, 0.5, dest, 0.06, 180);
+  tone(t, 'sine', 330 * vp, 82 * vp, vol * 0.5, 0.5, dest, 0.04);
+}
+// --- the information sounds: always the same, so you learn them ---
+// waiting to respawn: a soft pling each second, then a brighter one up a fifth when you're back in
+function sfxRespawnTick() {
+  if (!actx) return; const t = actx.currentTime, d = out(0, t, 0.3, true), v = LV.tick * 0.3;
+  pluck(t, 1046.5, v, 0.2, d);
+}
+function sfxRespawn() {
+  if (!actx) return; const t = actx.currentTime, d = out(0, t, 0.5, true), v = LV.tick * 0.3;
+  pluck(t, 1046.5, v, 0.15, d); pluck(t + 0.07, 1568, v * 1.1, 0.3, d);
+}
+// the shot coming ready while you're aiming: a small bright tock
+function sfxReady() {
+  if (!actx) return; const t = actx.currentTime, d = out(0, t, 0.12, true);
+  pluck(t, 1568, LV.ui * 0.45, 0.06, d);
+}
+// 3, 2, 1: a short beep each; Go: an octave up with its fifth, and longer
+function sfxCount(n) {
+  if (!actx) return; const t = actx.currentTime, d = out(0, t, 0.45, true), v = LV.count;
+  if (n > 0) pluck(t, 523.25, v, 0.15, d);
+  else { bigDuck(); pluck(t, 1046.5, v * 0.9, 0.35, d); pluck(t, 784, v * 0.5, 0.3, d); }
+}
+// a round's last seconds: a woodblock tick each second, higher and louder for the last three
+function sfxTick(s) {
+  if (!actx) return; const t = actx.currentTime, d = out(0, t, 0.1, true), f = s <= 3 ? 1318.5 : 1046.5, v = LV.tick * (s <= 3 ? 1 : 0.78);
+  pluck(t, f, v, 0.06, d);
+}
+// a round over: two bell strikes, C7 down to G6
+function sfxRoundEnd() {
+  if (!actx) return; const t = actx.currentTime, d = out(0, t, 1, true); bigDuck();
+  pluck(t, 1046.5, LV.bell, 0.45, d); pluck(t + 0.16, 784, LV.bell, 0.6, d);
+}
+// a celebration (it comes with the confetti): a quick run up the pentatonic; a big one lands on a chord
+function sfxFanfare(big) {
+  if (!actx) return; const t = actx.currentTime, d = out(0, t, 1.3, true), n = big ? 8 : 6; bigDuck();
+  for (let i = 0; i < n; i++) mallet(t + i * 0.05, penta(i) / 2, LV.fan * (0.6 + 0.4 * i / n), 0.2, d);
+  if (big) for (const i of [5, 7, 8]) mallet(t + n * 0.05, penta(i) / 2, LV.fan * 0.55, 0.7, d);
 }
 
 // ---------- camera / input ----------
@@ -2651,7 +2768,7 @@ function endDrag(e) {
   const a = late && early ? { dx: early.dx, dy: early.dy, pow: early.pow } : late;
   cancelDrag();
   if (!a) return;
-  if (me.alive) { if (NET.role === 'client') { netShot(a); buzz(15); } else if (eligible(me)) { shoot(me, a.dx, a.dy, a.pow); buzz(15); } else queuedShot = { ...a, until: time + SHOT_GRACE }; }
+  if (me.alive) { if (NET.role === 'client') { netShot(a); buzz(15); cueThrust(a); } else if (eligible(me)) { cueThrust(a); shoot(me, a.dx, a.dy, a.pow); buzz(15); } else queuedShot = { ...a, until: time + SHOT_GRACE }; }
   else if (ghost) ghostShoot(a);
 }
 // Let go a moment before your ball is ready (still rolling a little, or just after the last shot) and
@@ -2661,7 +2778,7 @@ let queuedShot = null;
 function fireQueued() {
   if (!queuedShot) return;
   if (!me.alive || time > queuedShot.until || drag) { queuedShot = null; return; }
-  if (eligible(me)) { const q = queuedShot; queuedShot = null; shoot(me, q.dx, q.dy, q.pow); buzz(15); }
+  if (eligible(me)) { const q = queuedShot; queuedShot = null; cueThrust(q); shoot(me, q.dx, q.dy, q.pow); buzz(15); }
 }
 fxc.addEventListener('pointerup', endDrag);
 // Chrome on a Mac sometimes reports letting go as losing the capture first: that is the release too
@@ -2771,7 +2888,7 @@ function land(amt) {
   streak = streakT > 0 ? streak + 1 : 0; streakT = 1.2;
   punch = Math.min(1, 0.45 + amt / 40);
   domTap(elScore, 1 + Math.min(0.4, amt / 100));   // bigger hauls tap harder
-  sfxClink(streak * 2, Math.min(1, amt / 40));
+  sfxClink(streak, Math.min(1, amt / 40));
 }
 function updateScoreFx(dt) {
   if (!me.alive && flyers.length) { flyers.length = 0; inFlight = 0; }
@@ -2838,12 +2955,14 @@ function syncLayers() {
   cl.toggle('card', card); cl.toggle('partyup', shown(pCard));
   cl.toggle('aim', started && !cl.contains('menu') && !card && (me.alive || !!ghost));
 }
+let hudAlive = false, cdHeard = false;   // (the respawn countdown's sound: was it counting, so the respawn gets its pling)
 function updateHud(dt) {
   syncLayers();
   if (!me.alive && started && !deathEl.hidden && deathCount) {
     const t = String(Math.max(1, Math.ceil(me.respawnT)));
-    if (deathCount.textContent !== t) { deathCount.textContent = t; deathCount.classList.remove('tick'); void deathCount.offsetWidth; deathCount.classList.add('tick'); }
+    if (deathCount.textContent !== t) { deathCount.textContent = t; deathCount.classList.remove('tick'); void deathCount.offsetWidth; deathCount.classList.add('tick'); sfxRespawnTick(); cdHeard = true; }
   }
+  if (me.alive !== hudAlive) { if (me.alive && cdHeard) sfxRespawn(); cdHeard = false; hudAlive = me.alive; }
   updateScoreFx(dt);
   hudT -= dt; if (hudT > 0) return; hudT = 0.2;
   const sorted = players.slice().sort((a, b) => b.score - a.score);
@@ -2885,7 +3004,7 @@ function deathCard(title, html = '', countdown = true) {
   $('deathText').innerHTML = html.replace(/(<br>\s*)+$/, '');
   $('deathCd').hidden = !countdown;
   deathCount = countdown ? $('deathCount') : null;
-  if (deathCount) deathCount.textContent = String(Math.max(1, Math.ceil(me.respawnT || 1)));
+  if (deathCount) { deathCount.textContent = String(Math.max(1, Math.ceil(me.respawnT || 1))); sfxRespawnTick(); cdHeard = true; }
   // a new card while one's up just changes what it says; otherwise it comes in
   if (shown(deathEl)) { const d = deathEl.firstElementChild; d.style.animation = 'none'; void d.offsetWidth; d.style.animation = ''; } else uiShow(deathEl);
 }
@@ -2909,14 +3028,16 @@ layout(location=6) in float a_heft;
 layout(location=7) in float a_ice;
 layout(location=8) in vec4 a_tint;
 uniform vec2 u_cam; uniform float u_zoom; uniform vec2 u_view; uniform float u_k; uniform float u_lift;
-const float RIM_MIN = 1.4, RIM_K = 0.06;   // outline width: at least this many px, else this share of the radius
+// outline width: 2.8 px on a table ball at normal zoom (18 px radius), growing with the square root of
+// the ball's size, as line weight does in drawings (a big ball gets a bolder line, not a chunky one), never under 1.5 px
+const float RIM_MIN = 1.5, RIM_AT = 2.8, RIM_REF = 17.8;
 out vec2 v_uv; out float v_px; out float v_rim; out float v_heft; out float v_ice;
 flat out vec4 v_col; flat out vec4 v_info; flat out vec3 v_c0; flat out vec3 v_c1; flat out vec3 v_c2; flat out vec4 v_tint;
 void main(){
   float rp = a_pos.z * u_zoom;
   float pad = 1.0 + 1.5 / max(rp, 1.0);
   v_uv = a_corner * pad; v_px = rp;
-  v_rim = max(RIM_MIN, rp * RIM_K);   // the outline grows with the ball: a fine line on the table, still clear on a big menu ball
+  v_rim = max(RIM_MIN, RIM_AT * sqrt(rp / RIM_REF));
   v_heft = a_heft; v_ice = a_ice; v_tint = a_tint;
   vec2 cs = vec2((a_pos.x - u_cam.x) * u_zoom, ((a_pos.y - u_cam.y) * u_k - a_pos.z * u_lift) * u_zoom) + 0.5 * u_view;
   vec2 cssp = cs + mat2(a_def.x, a_def.y, a_def.y, a_def.z) * (a_corner * pad) * a_pos.z * u_zoom;
@@ -2950,11 +3071,41 @@ float shards(highp vec3 P) {
   }
   return sqrt(d2) - sqrt(d1);
 }
+// Hue-shifted shading, the way illustrators shade colour (PurpleSkeleton's chart): a shadow isn't just
+// darker, its hue turns toward violet the short way round the wheel (red goes purple, yellow goes
+// orange, green goes blue) and it gets a little richer; a lit part turns toward yellow (blue goes cyan,
+// purple goes pink) and a little paler. Colours with no hue (white, ivory, greys) get the chart's
+// cool lilac shadows and a warm light instead.
+vec3 rgb2hsv(vec3 c) {
+  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y);
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-6)), d / (q.x + 1e-6), q.x);
+}
+vec3 hsv2rgb(vec3 c) { vec3 p = abs(fract(c.xxx + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0); return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y); }
+float toward(float h, float t, float m) { float d = fract(t - h + 0.5) - 0.5; return fract(h + clamp(d, -m, m)); }
+vec3 shade(vec3 c, float a) {      // a: how much darker, 0..1
+  vec3 h = rgb2hsv(c);
+  vec3 hue = hsv2rgb(vec3(toward(h.x, 0.75, 0.1 * a), min(1.0, h.y * (1.0 + 0.3 * a)), h.z * (1.0 - a)));
+  vec3 grey = c * (1.0 - a) * mix(vec3(1.0), vec3(0.82, 0.84, 1.06), a);
+  return mix(grey, hue, smoothstep(0.08, 0.3, h.y));
+}
+vec3 light(vec3 c, float a) {      // a: how much lit, 0..1
+  vec3 h = rgb2hsv(c);
+  vec3 hue = hsv2rgb(vec3(toward(h.x, 1.0 / 6.0, 0.06 * a), h.y * (1.0 - 0.2 * a), min(1.0, h.z * (1.0 + 0.2 * a))));
+  vec3 grey = min(vec3(1.0), c * (1.0 + 0.12 * a) * mix(vec3(1.0), vec3(1.03, 1.0, 0.94), a));
+  return mix(grey, hue, smoothstep(0.08, 0.3, h.y));
+}
 const vec3 WHITE = vec3(0.965, 0.945, 0.894);
 const vec3 IVORY = vec3(0.957, 0.929, 0.863);
 const vec3 RED   = vec3(0.925, 0.416, 0.239);
 // halfway between the lamp (up, left and toward the camera) and the camera: where the shine sits
 const vec3 SPEC_H = vec3(-0.2472, -0.3295, -0.9112);
+// the lamp itself (the direction SPEC_H is halfway to from the camera): up, left and 48° toward the
+// camera. The shading is worked out against it from the surface's own direction, so the line between
+// light and shadow curves round the ball as it does on a real sphere, and agrees with the shine.
+const vec3 LAMP = vec3(-0.4505, -0.6005, -0.6606);
 const float SPEC_SHEEN_K = 18.0, SPEC_CORE_K = 190.0;  // shininess of the sheen and the core
 const float SPEC_SHEEN = 6.0, SPEC_CORE = 2.0;          // px from the middle to half strength they never go under
 void main(){
@@ -3079,7 +3230,10 @@ void main(){
       vec2 l = vec2(sign(p.x) * p.y, p.z) / capR;
       vec2 cu = clamp(vec2(l.x * 0.5 + 0.5, 0.5 - l.y * 0.5), 0.0, 1.0);
       vec2 cellXY = vec2(mod(cell, 8.0), floor(cell / 8.0));
-      float g = textureLod(u_atlas, (cellXY + cu) / vec2(8.0, 4.0), 0.0).a;
+      // read at the detail that matches the ball's size on screen (the 64-texel cell spans the
+      // circle's width), so a small ball's digit is smooth instead of crunchy
+      float lod = max(0.0, log2(64.0 / max(2.0 * capR * v_px, 1.0)) - 0.5);
+      float g = textureLod(u_atlas, (cellXY + cu) / vec2(8.0, 4.0), lod).a;
       vec3 inkC = ink < 0.5 ? vec3(0.07, 0.07, 0.08) : (ink < 1.5 ? WHITE : RED);
       c = mix(c, inkC, g * inCap);
     }
@@ -3100,7 +3254,9 @@ void main(){
   // it turns away from the light and down toward the cloth; a heavy ball shades a touch more, so its
   // mass still reads. Nothing changes on the lit side.
   vec2 LD = normalize(vec2(-0.6, -0.8));
-  c *= 1.0 - (0.3 + 0.08 * v_heft) * smoothstep(0.15, -0.95, dot(v_uv, LD));
+  float ndl = dot(N, LAMP);
+  c = shade(c, (0.3 + 0.08 * v_heft) * smoothstep(0.45, -0.55, ndl));
+  c = light(c, 0.35 * smoothstep(0.72, 1.0, ndl));                   // and the side facing the light warms
   // Flat fill, plus an outline that takes the colour of the texture under it,
   // darkened by a smooth gradient: lighter on the side facing the light, darker opposite.
   float rimPx = v_rim;
@@ -3108,13 +3264,13 @@ void main(){
   float inRim = smoothstep(1.0 - rimW - 0.6 * aa, 1.0 - rimW + 0.6 * aa, d);
   float lit = dot(v_uv / max(d, 1e-4), normalize(vec2(-0.6, -0.8)));
   float tone = mix(0.36, 0.8, smoothstep(-1.0, 1.0, lit)) * (1.0 - v_heft * (0.08 + 0.42 * smoothstep(0.3, -1.0, lit)));
-  vec3 col = mix(c, c * tone, inRim);
+  vec3 col = mix(c, shade(c, 1.0 - tone), inRim);
   if (style == 9) col = mix(c, vec3(0.46, 0.50, 0.54) * (0.55 + 0.7 * smoothstep(-1.0, 1.0, lit)), inRim);   // a steel rim so the dark ball reads round
   // the same thin white catch-light the cushions have: a crisp line along the very edge,
   // only on the side facing the light, fading out round the sides
   float hiW = max(1.4, v_px * 0.05) / max(v_px, 1.0);          // grows with the ball like the outline
-  float hiK = smoothstep(1.0 - 1.9 * hiW, 1.0 - 1.1 * hiW, d) * smoothstep(0.15, 0.9, lit);
-  col = mix(col, vec3(1.0), 0.7 * hiK);
+  float hiK = smoothstep(1.0 - rimW - 0.7 * hiW, 1.0 - rimW + 0.1 * hiW, d) * smoothstep(0.15, 0.9, lit);   // (from the outline's inner edge, however wide it is)
+  col = mix(col, mix(light(c, 1.0), vec3(1.0), 0.55), 0.7 * hiK);   // tinted with the ball's own warm light (mostly white still), as the chart's highlights are
   // specular: the lamp's reflection off the ball's own surface (Blinn-Phong on the sphere's normal), so
   // the sphere shapes it: round in the middle, squeezed along the curve near the edge, and the same
   // share of any ball, as a real one is. Warm like the lamp; a faint sheen round a small core. Only
@@ -3233,10 +3389,13 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(uploadAtla
 // balls' own WebGL canvas, all of a kind in one instanced draw: under the balls, their shadows (in one
 // pass that merges where they overlap, like real shadows), then the dents heavy balls press into the
 // felt and the gold, Midas and ice glows; over the balls, every particle (sparks, stars, glints,
-// burst bits, rings, snow). Each instance is a quad: where (x, y, turn), how big (rx, ry, and two
-// numbers the shape uses), a colour, and which shape.
+// burst bits, rings, snow); and over everything, the things the effects layer used to draw each
+// frame: everyone's name tag, the crowns and gold-ball values, the holes' labels, the floating
+// numbers (stamped from one image atlas of pre-drawn tags), the bots' cues and shot arrows, your
+// movement dots, and the marks on the screen's edge. Each instance is a quad: where (x, y, turn),
+// how big (rx, ry, and two numbers the shape uses), a colour, and which shape.
 const SPR_F = 12, SPR_MAX = 1536, sprData = new Float32Array(SPR_F * SPR_MAX);
-const SPR = { ELLIPSE: 0, GLOW: 1, DIP: 2, SQUARE: 3, STREAK: 4, RING: 5, STAR: 6, GLINT: 7 };
+const SPR = { ELLIPSE: 0, GLOW: 1, DIP: 2, SQUARE: 3, STREAK: 4, RING: 5, STAR: 6, GLINT: 7, TAG: 9, SOFT: 10, DENT: 11 };
 const SPR_VS = `#version 300 es
 layout(location=0) in vec2 a_corner;
 layout(location=1) in vec3 a_p; layout(location=2) in vec4 a_s; layout(location=3) in vec4 a_c; layout(location=4) in float a_k;
@@ -3254,12 +3413,26 @@ void main(){
 const SPR_FS = `#version 300 es
 precision mediump float;
 in vec2 v_l; flat in vec4 v_s; flat in vec4 v_c; flat in float v_k; in float v_aa;
+uniform sampler2D u_tags;
 out vec4 o;
 float edge(float d) { return 1.0 - smoothstep(-v_aa, v_aa, d); }
 void main(){
   int k = int(v_k + 0.5); vec2 l = v_l; float a = 0.0;
+  if (k == 9) {                 // a pre-drawn tag: its corner in the atlas at (z, w), its size there in (r, g)
+    vec2 t = l / v_s.xy;
+    if (abs(t.x) > 1.0 || abs(t.y) > 1.0) { o = vec4(0.0); return; }
+    o = texture(u_tags, v_s.zw + (t * 0.5 + 0.5) * v_c.rg) * v_c.a; return;
+  }
   if (k == 0) {                 // a filled ellipse, crisp edged: shadows, snow, the armed bomb's glow
     a = edge((length(l / v_s.xy) - 1.0) * min(v_s.x, v_s.y));
+  } else if (k == 11) {         // the cloth pressed down under a heavy ball, lit like a hollow: its slope on the lamp's side
+    // (up-left) faces away from the lamp and sits in shade, the far slope faces it and catches a little light
+    float t = length(l / v_s.xy); if (t >= 1.0) { o = vec4(0.0); return; }
+    float slope = sin(3.14159 * pow(t, 0.8)), lit = -dot(normalize(l + 1e-4), normalize(vec2(-0.6, -0.8)));
+    float sh = slope * lit * v_c.a;
+    o = sh < 0.0 ? vec4(0.0, 0.0, 0.0, -sh) : vec4(vec3(1.0, 0.98, 0.92) * sh * 0.25, sh * 0.25); return;
+  } else if (k == 10) {         // a ball's shadow: solid in the middle, its edge softened over the outer part
+    float t = length(l / v_s.xy); a = 1.0 - smoothstep(0.55, 1.0, t);
   } else if (k == 1) {          // a glow: full under the ball's rim (at z), then easing off to nothing
     float t = length(l / v_s.xy), e = v_s.z, e1 = e + (1.0 - e) * 0.25, e2 = e + (1.0 - e) * 0.55;
     a = t < e ? 1.0 : t < e1 ? mix(1.0, 0.42, (t - e) / (e1 - e)) : t < e2 ? mix(0.42, 0.14, (t - e1) / (e2 - e1)) : t < 1.0 ? mix(0.14, 0.0, (t - e2) / (1.0 - e2)) : 0.0;
@@ -3299,7 +3472,7 @@ function makeSpriteGL(R) {
   for (const [loc, n] of [[1, 3], [2, 4], [3, 4], [4, 1]]) { g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, n, g.FLOAT, false, SPR_F * 4, off); g.vertexAttribDivisor(loc, 1); off += n * 4; }
   g.bindVertexArray(null);
   const L = n => g.getUniformLocation(prog, n);
-  return { prog, vao, inst, n: 0, U: { cam: L('u_cam'), zoom: L('u_zoom'), view: L('u_view'), k: L('u_k'), up: L('u_up') } };
+  return { prog, vao, inst, n: 0, U: { cam: L('u_cam'), zoom: L('u_zoom'), view: L('u_view'), k: L('u_k'), up: L('u_up'), tags: L('u_tags') } };
 }
 try { if (mainGL) sprGL = makeSpriteGL(mainGL); } catch (e) { console.warn('instanced sprites off:', e); sprGL = null; }
 // colours as 0..1 rgb from '#rgb', '#rrggbb', 'rgb(...)' or 'rgba(...)' (alpha multiplied in), cached
@@ -3325,6 +3498,7 @@ function sprFlush(camX, camY, up, max) {
   g.useProgram(S.prog); g.bindVertexArray(S.vao); g.bindBuffer(g.ARRAY_BUFFER, S.inst);
   g.bufferSubData(g.ARRAY_BUFFER, 0, sprData, 0, S.n * SPR_F);
   g.uniform2f(S.U.cam, camX, camY); g.uniform1f(S.U.zoom, ZOOM); g.uniform2f(S.U.view, VW, VH); g.uniform1f(S.U.k, KY); g.uniform1f(S.U.up, up);
+  if (tags.tex) { g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tags.tex); g.uniform1i(S.U.tags, 1); g.activeTexture(g.TEXTURE0); }
   g.enable(g.BLEND);
   // merged shadows: black, so only the alpha matters, and it takes the darker of the two where they meet
   if (max) { g.blendEquationSeparate(g.FUNC_ADD, g.MAX); g.blendFunc(g.ONE, g.ONE); }
@@ -3333,19 +3507,106 @@ function sprFlush(camX, camY, up, max) {
   g.blendEquation(g.FUNC_ADD); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
   g.bindVertexArray(null); S.n = 0;
 }
+// a tag from the atlas: its centre (x, y), half sizes (hw, hh), entry e, alpha a
+function sprTag(x, y, hw, hh, e, a) {
+  const S = sprGL; if (S.n >= SPR_MAX || a <= 0.003) return;
+  const o = S.n++ * SPR_F;
+  sprData[o] = x; sprData[o + 1] = y; sprData[o + 2] = 0; sprData[o + 3] = hw; sprData[o + 4] = hh; sprData[o + 5] = e.u; sprData[o + 6] = e.v;
+  sprData[o + 7] = e.du; sprData[o + 8] = e.dv; sprData[o + 9] = 0; sprData[o + 10] = Math.min(1, a); sprData[o + 11] = SPR.TAG;
+}
+// The tag atlas: every bit of text and every icon drawn over the table (names, values, labels, the
+// floating numbers, crowns) is drawn once into a small canvas, which is packed into one texture the
+// first time it's shown, and after that it's a stamp. A tag is { c: canvas, w, h: its size in world
+// units, ax, ay: where its anchor point sits in it, from the top left, in the same units }. When the
+// atlas fills, it starts again empty on the next frame (the tags on screen pack back in at once).
+const TAG_PX = 1024, TAG_MAX = 400;
+const tags = { map: new Map(), x: 2, y: 2, row: 0, tex: null, gl: null, full: false };
+function tagGet(key, make) {
+  let e = tags.map.get(key);
+  if (!e) { if (tags.map.size >= TAG_MAX) tags.full = true; e = make(); tags.map.set(key, e); }
+  return e;
+}
+function tagPack(e) {
+  if (e.u !== undefined && e.gen === tags.gen) return true;
+  if (tags.full) return false;
+  const g = gl, W = e.c.width, H = e.c.height;
+  if (W + 2 > TAG_PX || H + 2 > TAG_PX) return false;
+  if (tags.x + W + 2 > TAG_PX) { tags.x = 2; tags.y += tags.row + 2; tags.row = 0; }
+  if (tags.y + H + 2 > TAG_PX) { tags.full = true; return false; }
+  if (!tags.tex) {
+    tags.tex = g.createTexture(); g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tags.tex);
+    g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, TAG_PX, TAG_PX, 0, g.RGBA, g.UNSIGNED_BYTE, null);
+    g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
+    g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+  }
+  g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tags.tex);
+  g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  g.texSubImage2D(g.TEXTURE_2D, 0, tags.x, tags.y, g.RGBA, g.UNSIGNED_BYTE, e.c);
+  g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); g.activeTexture(g.TEXTURE0);
+  e.u = tags.x / TAG_PX; e.v = tags.y / TAG_PX; e.du = W / TAG_PX; e.dv = H / TAG_PX; e.gen = tags.gen;
+  tags.x += W + 2; tags.row = Math.max(tags.row, H);
+  return true;
+}
+// at the start of a frame: a full atlas (or a new GL context) starts again
+tags.gen = 0;
+function tagsFrame() {
+  if (tags.gl !== gl) { tags.gl = gl; tags.tex = null; tags.full = true; }
+  if (!tags.full) return;
+  tags.full = false; tags.x = tags.y = 2; tags.row = 0; tags.gen++;
+  if (tags.map.size >= TAG_MAX) tags.map.clear();
+}
+// the tag with its anchor at world (x, y), upright on the screen, scaled sx × sy about the anchor and
+// faded by a: on the top sprite layer, or (with no WebGL) straight onto the effects layer
+function tagAt(g, e, x, y, a = 1, sx = 1, sy = 1) {
+  if (!e || a <= 0.003) return;
+  if (sprGL && gl) {
+    if (!tagPack(e)) return;
+    sprTag(x + (e.w / 2 - e.ax) * sx, y + (e.h / 2 - e.ay) * sy / KY, e.w / 2 * sx, e.h / 2 * sy / KY, e, a);
+    return;
+  }
+  const ga = g.globalAlpha; g.globalAlpha = ga * a;
+  g.drawImage(e.c, x - e.ax * sx, y - e.ay * sy, e.w * sx, e.h * sy);
+  g.globalAlpha = ga;
+}
+// the tags themselves: a name or value (the label look), a crown, and the painted text of the holes'
+// labels and the floating numbers (anchored at its foot)
+const labelTag = (t, size, color) => tagGet(`L|${t}|${size}|${color}`, () => { const c = labelImg(t, size, color); return { c: c.img, w: c.w, h: c.h, ax: c.w / 2, ay: c.h / 2 }; });
+const tagScale = () => Math.min(3, Math.max(2, Math.ceil(DPR * Math.max(1, ZOOM))));
+const crownTag = (w, col) => tagGet(`C|${w}|${col}`, () => {
+  const s2 = tagScale(), pad = 3, W = w + pad * 2, H = w * 0.62 + pad * 2, c = document.createElement('canvas');
+  c.width = Math.ceil(W * s2); c.height = Math.ceil(H * s2);
+  const g = c.getContext('2d'); g.setTransform(s2, 0, 0, s2, 0, 0); drawCrown(g, W / 2, H / 2, w, col);
+  return { c, w: W, h: H, ax: W / 2, ay: H / 2 };
+});
+function paintedTag(o) {
+  return tagGet(`P|${o.text}|${o.size}|${o.color}|${o.border}|${o.tok ? 1 : 0}`, () => {
+    const s2 = tagScale(), px = o.size, pad = px * 0.32, c = document.createElement('canvas'), g = c.getContext('2d');
+    const q = { text: o.text, size: px, color: o.color, border: o.border, tok: o.tok, w: 0 };
+    g.font = `400 ${px}px ${FONT_TITLE}`;
+    const tw = (q.tok ? px * (TOK_K + TOK_GAP) : 0) + g.measureText(String(q.text)).width;
+    const W = tw + pad * 2 + px * 0.1, H = px * 1.3 + pad * 1.2, footY = H - pad;
+    c.width = Math.ceil(W * s2); c.height = Math.ceil(H * s2);
+    g.setTransform(s2, 0, 0, s2, (pad + tw / 2) * s2, footY * s2); g.textAlign = 'left'; g.textBaseline = 'middle';
+    paintTag(g, q);
+    return { c, w: W, h: H, ax: pad + tw / 2, ay: footY };
+  });
+}
+// the balls' shadows: cast down and right, away from the balls' lamp (up, left and toward the camera, so
+// only a short way), the ball's own size, with a soft edge: just enough to lift it off the cloth
+const AO_R = 1.1, AO_A = 0.38, AO_OFF = [0.2, 0.27];
 const GLOWS = { loot: ['rgb(255,196,64)', 1 / 2.1], gold: ['rgb(255,206,60)', 1 / 2.4], ice: ['rgb(225,244,255)', 1 / 1.9] };
 // what goes under the balls: the shadows (merged), then dents and glows
 function sprUnder(list, camX, camY) {
   for (let i = 0; i < list.length; i++) {
     const b = list[i], m00 = b.d0 ?? 1, m01 = b.d1 ?? 0, m11 = b.d2 ?? 1, h = heft(b) || 0;
-    if (m00 === 1 && !m01 && m11 === 1 && b.kind !== 'cue' && b.fade === undefined) { spr(b.x + b.r * 0.22, b.y + b.r * 0.3, 0, b.r * 1.02, b.r * 1.02, 0, 0, '#000', SHADOW_A, SPR.ELLIPSE); continue; }
+    if (m00 === 1 && !m01 && m11 === 1 && b.kind !== 'cue' && b.fade === undefined) { spr(b.x + b.r * AO_OFF[0], b.y + b.r * AO_OFF[1], 0, b.r * AO_R, b.r * AO_R, 0, 0, '#000', AO_A, SPR.SOFT); continue; }
     const ang = 0.5 * Math.atan2(2 * m01, m00 - m11), mid = (m00 + m11) / 2, rad = Math.hypot((m00 - m11) / 2, m01), tuck = 1 - 0.45 * h;
-    spr(b.x + b.r * 0.22 * tuck, b.y + b.r * 0.3 * tuck, ang, b.r * (mid + rad) * 1.02, Math.max(0.1, b.r * (mid - rad) * 0.98), 0, 0, '#000', SHADOW_A * ballAlpha(b) * (1 + 0.9 * h), SPR.ELLIPSE);
+    spr(b.x + b.r * AO_OFF[0] * tuck, b.y + b.r * AO_OFF[1] * tuck, ang, b.r * (mid + rad) * AO_R, Math.max(0.1, b.r * (mid - rad) * AO_R), 0, 0, '#000', AO_A * ballAlpha(b) * (1 + 0.9 * h), SPR.SOFT);
   }
   sprFlush(camX, camY, 0, true);
   for (let i = 0; i < list.length; i++) {
     const b = list[i], h = heft(b) || 0;
-    if (h >= 0.04) { const rr = b.r * (1.3 + 1.1 * h); spr(b.x, b.y, 0, rr, rr, 0, 0, '#000', (0.15 + 0.45 * h) * ballAlpha(b), SPR.DIP); }
+    if (h >= 0.04) { const rr = b.r * (1.4 + 1.2 * h); spr(b.x, b.y, 0, rr, rr, 0, 0, '#000', (0.2 + 0.5 * h) * ballAlpha(b), SPR.DENT); }   // (its weight dents the cloth)
     const glow = (G, rr, a) => spr(b.x, b.y, 0, rr, rr, G[1], 0, G[0], a, SPR.GLOW);
     if (b.kind === 'midas' && b.goldT > time) glow(GLOWS.gold, b.r * 2.4, (0.42 + 0.06 * Math.sin(time * 3)) * Math.min(1, b.goldT - time));
     if (b.frozenT > time) glow(GLOWS.ice, b.r * 1.9, 0.3 + 0.25 * Math.max(0, b.ice || 0));
@@ -3479,9 +3740,6 @@ const feltOf = alt => {
   return c;
 };
 const feltTex = feltOf(FELT_ALT);
-// the same board for the holes' walls, with the squares a little more apart: the dark down there
-// would flatten the felt's own gentle difference to nothing
-const feltWallTex = feltOf(1.2);
 function shadeCol(hex, k) { const c = rgb(hex); return `rgb(${c[0] * k * 255 | 0},${c[1] * k * 255 | 0},${c[2] * k * 255 | 0})`; }
 function circle(g, x, y, r) { g.beginPath(); g.arc(x, y, Math.max(0, r), 0, TAU); }
 function labelImg(t, size, color) {
@@ -3554,14 +3812,33 @@ function drawBallFlat(b) {
   const ao = g.createLinearGradient(x - r * 0.15, y - r * 0.2, x + r * 0.57, y + r * 0.76);
   ao.addColorStop(0, 'rgba(0,0,0,0)'); ao.addColorStop(1, 'rgba(0,0,0,0.3)');
   circle(g, x, y, r); g.fillStyle = ao; g.fill();
-  g.lineWidth = 2; g.strokeStyle = 'rgba(0,0,0,0.45)'; circle(g, x, y, r - 1); g.stroke();
+  g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,0.45)'; circle(g, x, y, r - 2); g.stroke();
   g.lineWidth = 1.3; g.strokeStyle = 'rgba(255,255,255,0.5)'; g.beginPath(); g.arc(x, y, r - 0.8, -2.21 - 0.85, -2.21 + 0.85); g.stroke();
   g.globalAlpha = 1;
   g.restore();
 }
 
-function drawCue(g, b, dx, dy, pow, color, w = b === me.ball ? PXW : 1) {
-  const back = b.r + 6 + (1 - (1 - pow) * (1 - pow)) * 60, L = 240;
+function cueAt(g, b, dx, dy, pow, color, w = 1) {
+  if (!sprGL) { drawCue(g, b, dx, dy, pow, color, w); return; }
+  const back = b.r + 6 + (1 - (1 - pow) * (1 - pow)) * 60, L = 240, ang = Math.atan2(dy, dx) + Math.PI;
+  const seg = (t0, t1, hw, col, ox = 0, oy = 0, a = 1) => {
+    const m = back + L * (t0 + t1) / 2, hl = L * (t1 - t0) / 2;
+    spr(b.x - dx * m + ox, b.y - dy * m + oy, ang, hl + hw, hw, hl, hw, col, a, SPR.STREAK);
+  };
+  seg(0, 1, 3 * w, '#000', 3, 4, 0.22);
+  for (const [t0, t1, col] of CUE_STEPS(color)) seg(t0, t1, 2 * w, col);
+}
+// the cue's shaft, tip to butt, in steps (the effects layer drew it as one gradient)
+const cueSteps = new Map();
+function CUE_STEPS(color) {
+  let v = cueSteps.get(color); if (v) return v;
+  const mix = (a, b, t) => { const p = rgb(a), q = rgb(b); return `rgb(${Math.round((p[0] + (q[0] - p[0]) * t) * 255)},${Math.round((p[1] + (q[1] - p[1]) * t) * 255)},${Math.round((p[2] + (q[2] - p[2]) * t) * 255)})`; };
+  v = [[0, 0.04, '#e9dcc0'], [0.035, 0.2, mix(color, '#8a5a32', 0.15)], [0.19, 0.4, mix(color, '#8a5a32', 0.5)], [0.39, 0.6, mix(color, '#8a5a32', 0.85)], [0.59, 0.8, mix('#8a5a32', '#3a2416', 0.35)], [0.79, 1, mix('#8a5a32', '#3a2416', 0.8)]];
+  cueSteps.set(color, v); return v;
+}
+const cueBack = (b, pow) => b.r + 6 + (1 - (1 - pow) * (1 - pow)) * 60;
+function drawCue(g, b, dx, dy, pow, color, w = b === me.ball ? PXW : 1, back = cueBack(b, pow)) {
+  const L = 240;
   const x1 = b.x - dx * back, y1 = b.y - dy * back, x2 = b.x - dx * (back + L), y2 = b.y - dy * (back + L);
   g.lineCap = 'round';
   g.strokeStyle = 'rgba(0,0,0,0.22)'; g.lineWidth = 6 * w; g.beginPath(); g.moveTo(x1 + 3, y1 + 4); g.lineTo(x2 + 3, y2 + 4); g.stroke();
@@ -3604,7 +3881,7 @@ const goneCopy = c => { c.alive = false; c.dead = true; };
 // With `ms`, it stops after that long, however far it's got (runForward.cut says it did): a packed
 // crowd (a magnet's pull, a break) is a hit on every ball every tick, and a forecast of it is as dear
 // as that many frames of the live table.
-function runForward(cl, ticks, mine, minTicks = 0, fire = null, ms = 0) {
+function runForward(cl, ticks, mine, minTicks = 0, fire = null, ms = 0, step = LOOK_STEP) {
   let contact = null, n = 0, fTick = 0, fired = !fire;
   const end = ms ? performance.now() + ms : 0;
   runForward.cut = false;
@@ -3666,12 +3943,12 @@ function runForward(cl, ticks, mine, minTicks = 0, fire = null, ms = 0) {
       for (const c of movers) { if (!c.alive) { fDel(c); continue; } adv(c); snap(c); if (c.rec) recPt(c); fPut(c); }
       tNow = 0;
     }
-    if (n % LOOK_STEP === 0) track();
+    if (n % step === 0) track();
     if (minTicks && n >= minTicks) {
       const still = b => !b.alive || (!b.vx && !b.vy);
       if (fired && still(mine) && (!contact || still(contact.other))) break;
     }
-    if (!movers.length && !minTicks) { for (let m = n + 1; m <= ticks; m++) if (m % LOOK_STEP === 0) track(); break; }
+    if (!movers.length && !minTicks) { for (let m = n + 1; m <= ticks; m++) if (m % step === 0) track(); break; }
   }
   return contact;
 }
@@ -3679,8 +3956,10 @@ runForward.id = 0;
 // Where your ball will be 0.5 s from now, recomputed every tick while it moves. Only what it could meet
 // in that time is copied (as far as it rolls, plus room for anything coming at it). It gets MOVE_MS:
 // one that runs out (a crowd your ball is caught in) keeps the last answer, and while they're that
-// dear it's only worked out again every few ticks.
-const MOVE_MS = 1.5, MOVE_REACH = 260;
+// dear it's only worked out again every few ticks. It records every tick, a few past the 0.5 s (enough
+// to cover being reused), so the dot can be placed between ticks (see drawMovementDots); t0 is the
+// moment it starts from, in ticks.
+const MOVE_MS = 1.5, MOVE_REACH = 260, MOVE_SPARE = 8;
 let movePred = null;
 function movementForecast() {
   if (movePred && tickN - movePred.tick < movePred.every) return movePred.cl;
@@ -3688,10 +3967,13 @@ function movementForecast() {
   const cl = cloneBox(c.x, c.y, reach, reach);
   let any = false; for (const x of cl) if (x.moved) { any = true; break; }
   const t0 = performance.now();
-  if (any) runForward(cl, MOVE_AHEAD, null, 0, null, MOVE_MS);
+  if (any) runForward(cl, MOVE_AHEAD + MOVE_SPARE, null, 0, null, MOVE_MS, 1);
   const took = performance.now() - t0, cut = any && runForward.cut;
   const every = took > MOVE_MS / 2 ? Math.min(6, 1 + Math.ceil(took / (MOVE_MS / 2))) : 1;
-  movePred = cut ? { tick: tickN, cl: movePred ? movePred.cl : [], every: 6 } : { tick: tickN, cl: any ? cl : [], every };
+  // (it's worked out while the frame is drawn, when every moving ball has been carried on to the
+  // frame's own moment, partway into the next tick: so that's the moment it starts from)
+  const t0f = tickN + tickAcc / TICK;
+  movePred = cut ? { tick: tickN, t0: movePred ? movePred.t0 : t0f, cl: movePred ? movePred.cl : [], every: 6 } : { tick: tickN, t0: t0f, cl: any ? cl : [], every };
   return movePred.cl;
 }
 // your shot played out against the moving table; recomputed when the aim changes or every 2 ticks
@@ -3718,42 +4000,43 @@ function shotForecast(a) {
 }
 const dotCol = c => c.kind === 'cue' ? (c.owner === me ? COL.chalk : c.owner === leader ? COL.brass : '#ff8a7a') : COL.ivory;
 // movement dots: one dot per moving ball, where it will be in 0.5 s. Gap = speed, direction = heading.
-function drawMovementDots(g, skip) {
+// It's placed exactly 0.5 s ahead of the moment being drawn: the forecast has your ball's place at
+// every tick from when it was worked out, and the dot sits between the two ticks either side of that
+// moment, by how far the screen is through the current tick (the same lead the balls are drawn with),
+// so it glides at the frame rate however often the forecast is redone.
+function drawMovementDots(g, skip, asSprites = false) {
   if (!me.ball || (!me.ball.vx && !me.ball.vy)) return;       // only your ball has one, and only while it moves
   const cl = movementForecast();
-  const idx = MOVE_AHEAD / LOOK_STEP;                // track entry for +0.5 s (it is the 2nd sample)
   for (const c of cl) {
     if (!c.moved || c.ref === skip || c.ref !== me.ball) continue;     // only your own ball
-    const i = (idx - 1) * 2, x = c.track[i], y = c.track[i + 1];
-    if (x === undefined || !(x === x)) continue;     // potted before then (or not worked out that far)
+    // ticks after the forecast's start: how long ago it was worked out, where the screen is in this
+    // tick, and the half second ahead; the track's entry k is tick k + 1
+    const n = c.track.length / 2, at = Math.min(n - 1, (tickN + tickAcc / TICK - movePred.t0) + MOVE_AHEAD - 1);
+    if (at < 0) continue;
+    const k0 = Math.floor(at), k1 = Math.min(n - 1, k0 + 1), fr = at - k0;
+    const x0 = c.track[k0 * 2], y0 = c.track[k0 * 2 + 1], x1 = c.track[k1 * 2], y1 = c.track[k1 * 2 + 1];
+    if (!(x0 === x0) || !(x1 === x1)) continue;     // potted before then (or not worked out that far)
+    const x = x0 + (x1 - x0) * fr, y = y0 + (y1 - y0) * fr;
     const d2 = (x - c.ref.x) ** 2 + (y - c.ref.y) ** 2; if (d2 < (c.r + 3) ** 2) continue;
-    const player = c.kind === 'cue';
-    g.globalAlpha = player ? 0.95 : 0.6;
-    circle(g, x, y, (player ? 4.2 : 3) * PXW); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill();
-    circle(g, x, y, (player ? 3 : 2) * PXW); g.fillStyle = dotCol(c); g.fill();
+    const player = c.kind === 'cue', a = player ? 0.95 : 0.6, r0 = (player ? 4.2 : 3) * PXW, r1 = (player ? 3 : 2) * PXW;
+    if (asSprites) { spr(x, y, 0, r0, r0, 0, 0, 'rgba(0,0,0,0.55)', a, SPR.ELLIPSE); spr(x, y, 0, r1, r1, 0, 0, dotCol(c), a, SPR.ELLIPSE); continue; }
+    g.globalAlpha = a;
+    circle(g, x, y, r0); g.fillStyle = 'rgba(0,0,0,0.55)'; g.fill();
+    circle(g, x, y, r1); g.fillStyle = dotCol(c); g.fill();
   }
   g.globalAlpha = 1;
 }
-// shot tells: a small triangle just in front of anyone winding up a shot, pointing the way they'll
-// go (where only, not how hard), outlined in black with the HUD's hard shadow
+// shot tells: a small flat dot just in front of anyone winding up a shot, on the side they'll go
+// (where only, not how hard), with no outline
 const TELL_S = 8, TELL_GAP = 8;
-function drawTells(g) {
+function drawTells(g, asSprites = false) {
   for (const p of players) {
     if (!(p.isBot || p.remote || p.netAim) || !p.alive || !p.windup || !inView(p.ball.x, p.ball.y)) continue;
     const w = p.windup, b = p.ball, prog = 1 - Math.max(0, w.t) / (w.t0 || 0.55), s = TELL_S * PXW;
-    const d = b.r + TELL_GAP * PXW + s, cx = b.x + w.dx * d, cy = b.y + w.dy * d, px = -w.dy, py = w.dx;
-    const tri = (ox, oy, k) => {
-      const tip = s * 1.1 * k, base = s * 0.7 * k, half = s * 0.85 * k;
-      g.beginPath();
-      g.moveTo(cx + ox + w.dx * tip, cy + oy + w.dy * tip);
-      g.lineTo(cx + ox - w.dx * base + px * half, cy + oy - w.dy * base + py * half);
-      g.lineTo(cx + ox - w.dx * base - px * half, cy + oy - w.dy * base - py * half);
-      g.closePath(); g.fill();
-    };
-    g.globalAlpha = 0.45 + 0.55 * prog; g.lineJoin = 'round';
-    const o = 1.6 * PXW;
-    g.fillStyle = '#000'; tri(o * 0.8, o, 1 + o / s * 1.6); tri(0, 0, 1 + o / s * 1.6);
-    g.fillStyle = p === leader ? COL.brass : '#ff8a7a'; tri(0, 0, 1);
+    const d = b.r + TELL_GAP * PXW + s, cx = b.x + w.dx * d, cy = b.y + w.dy * d, rr = s * 0.7;
+    const al = 0.45 + 0.55 * prog, col = p === leader ? COL.brass : '#ff8a7a';
+    if (asSprites) { spr(cx, cy, 0, rr, rr, 0, 0, col, al, SPR.ELLIPSE); continue; }
+    g.globalAlpha = al; g.fillStyle = col; circle(g, cx, cy, rr); g.fill();
   }
   g.globalAlpha = 1;
 }
@@ -3781,8 +4064,12 @@ function dotPath(g, pts, color, a0, a1, gap, rad) {
 }
 // solid line that fades toward its end: one stroke with a gradient, so joints don't overlap into stripes
 function rgba(color, a) { const c = rgb(color); return `rgba(${c[0] * 255 | 0},${c[1] * 255 | 0},${c[2] * 255 | 0},${a})`; }
-// widths are given in phone pixels; PXW keeps them the same on screen at any zoom
+// widths are given in phone pixels; PXW turns them into table units (see aimPx)
 let PXW = 1;
+// the aim guide's line width, in table units: as on a phone at normal zoom (0.75) it's what it always was;
+// zoomed in or out it changes weight with the square root of the zoom, as the balls' outlines do (line
+// weight in a drawing grows slower than what it draws), and its 2-wide lines never go under a device pixel
+const aimPx = () => Math.max(Math.sqrt(0.75 / ZOOM), 0.5 / (ZOOM * DPR));
 function fadePath(g, pts, color, width, a0, a1) {
   if (pts.length < 4 || polyLen(pts) < 1) return;
   const n = pts.length; width *= PXW;
@@ -3824,7 +4111,6 @@ function cutPath(pts, max) { const w = walkTo(pts, max); return w ? pts.slice(0,
 // where your own ball would end up if it goes: a warning mark on its hole, or on the rim where it falls off
 function scratchMark(g, mine, path) {
   if (mine.fell) { const q = toRim(path[path.length - 2], path[path.length - 1], 8); endMark(g, q.x, q.y, 7, COL.danger, true); }
-  else endMark(g, mine.pocket.x, mine.pocket.y, mine.pocket.r + 5, COL.danger, true);
 }
 let aimAlpha = 1;
 // what the guide is showing, eased between forecasts so ghosts glide instead of hopping
@@ -3834,9 +4120,9 @@ function drawAim(g) {
   const c = me.ball, ready = eligible(me);
   const a = dragAim();
   if (!a) { AV.on = false; return; }
-  PXW = 0.75 / ZOOM;
+  PXW = aimPx();
   if (!AV.on) { AV.on = true; AV.t0 = time; AV.ready = ready; AV.ctarget = null; AV.sOn = false; }
-  if (ready && !AV.ready) { AV.readyT = time; buzz(8); }
+  if (ready && !AV.ready) { AV.readyT = time; buzz(8); sfxReady(); }
   AV.ready = ready;
   const grow = Math.min(1, (time - AV.t0) / 0.14), growE = 1 - (1 - grow) * (1 - grow);
   aimAlpha = ready ? 1 : 0.4;
@@ -3852,10 +4138,12 @@ function drawAim(g) {
   if (fp) {
     const mine = fp.mine, contact = fp.contact;
     g.globalAlpha = aimAlpha;
-    // your ball up to first contact: solid line, dots after its first bounce; red if it drops
+    // your ball up to first contact: solid line, dots after its first bounce; red if it goes off the
+    // rim. Holes never change it: the guide doesn't mark or circle a hole, or turn red for one
+    // (reading whether your ball drops is yours to do)
     const pre = contact ? mine.path.slice(0, mine.contactIdx) : mine.path;
     const preLen = polyLen(pre), maxLen = guideLen(me), cut = cutPath(pre, Math.min(maxLen, preLen) * growE + 0.01);
-    const scratchEarly = (mine.pocket || mine.fell) && (!contact || mine.potTick <= contact.tick);
+    const scratchEarly = mine.fell && (!contact || mine.potTick <= contact.tick);
     // the line is the power: it runs exactly as far as the ball will roll. Cut short by the
     // handicap, it fades out to nothing instead.
     const capped = preLen > maxLen;
@@ -3902,14 +4190,27 @@ function drawAim(g) {
       // your ball after contact
       if (mine.contactIdx) {
         const post = cutPath(mine.path.slice(mine.contactIdx - 2), 40 + 80 * (1 - f));
-        const sc = (mine.pocket || mine.fell) && mine.potTick > contact.tick && polyLen(mine.path.slice(mine.contactIdx - 2)) <= 40 + 80 * (1 - f) + 1;
+        const sc = mine.fell && mine.potTick > contact.tick && polyLen(mine.path.slice(mine.contactIdx - 2)) <= 40 + 80 * (1 - f) + 1;
         dotPath(g, trimPath(post, -1, c.r + 4).pts, sc ? DG : IV, 0.6, sc ? 0.55 : 0.1, 12, 2.6);
         if (sc) scratchMark(g, mine, mine.path);
       }
     }
   }
-  drawCue(g, at, a.dx, a.dy, a.pow, ready ? CH : COL.muted, PXW);
+  g.globalAlpha = ready ? 1 : 0.45; drawCue(g, at, a.dx, a.dy, a.pow, MY_CUE, 1);
   g.globalAlpha = 1; aimAlpha = 1;
+}
+// Your pull is a cue: it sits behind your ball and draws back the harder you pull. Let go and it
+// jabs forward into the ball and fades.
+const MY_CUE = '#6b4a2e', THRUST_T = 0.07, THRUST_FADE = 0.18;
+let thrust = null;
+function cueThrust(a) { if (me.ball) thrust = { t: time, x: me.ball.x, y: me.ball.y, r: me.ball.r, dx: a.dx, dy: a.dy, pow: a.pow }; }
+function drawCueThrust(g) {
+  const s = thrust; if (!s) return;
+  const u = time - s.t; if (u > THRUST_T + THRUST_FADE) { thrust = null; return; }
+  const k = Math.min(1, u / THRUST_T), back0 = cueBack(s, s.pow), back = back0 + (s.r + 1 - back0) * k * k;
+  g.globalAlpha = u < THRUST_T ? 1 : 1 - (u - THRUST_T) / THRUST_FADE;
+  drawCue(g, s, s.dx, s.dy, s.pow, MY_CUE, 1, back);
+  g.globalAlpha = 1;
 }
 
 // ---------- static table layer ----------
@@ -3922,19 +4223,18 @@ const EDGE_LIP = 40;
 const tileCache = new Map();
 let tileScale = 0, tileTilt = false;
 // ---------- holes ----------
-// A hole is a round shaft cut straight down through the felt, and what you see inside is the board
-// itself running on down: the squares the hole was cut through carry on over the edge and down the
-// wall, lined up with the ones outside, closing in toward the middle the deeper they go (the wall
-// foreshortens) and darkening (less light gets down there) until it's black at the bottom.
-// (A point ρ from the centre on screen shows the board at b(ρ) = r − u·(1 + HOLE_PULL·u/r), u = r − ρ:
-// exactly the board at the cut, then squeezing harder inward. It's drawn as thin rings, each the
-// board scaled about the centre to fit.) Lit from the top-left like everything else: the near wall
-// under the top-left lip is in shadow. Every hole's inside is the same plain board; a special hole
-// shows its type only in the label above it (see holeLabel).
+// A hole is a round shaft of radius r cut straight down through the felt, and its wall is lined with
+// the board itself, cut straight through: each square goes on down the wall as its own colour, so a
+// point of the wall at any depth is the colour of the board at the cut straight above it (stripes
+// down the wall, one per square the cut crosses). Every pixel of a hole's picture works out which point of the wall it sees (shaftAt),
+// which point of the cloth is there, and takes that square's colour (four samples a pixel, so the
+// edges are smooth) and the paint on it. Then the lamp's light, the near wall's shade, and the depth
+// (less light gets down there: pure black at the bottom) go over it. Lit from the top-left like
+// everything else. Every hole's inside is the same plain board; a special hole shows its type only in
+// the label above it (see holeLabel).
 const LIP = 0.22;                                       // (where a potted ball drops in, as a share of the radius)
-const HOLE_RINGS = 32, HOLE_DEPTH = 0.56, HOLE_PULL = 1.8;
-const HOLE_SOFT = 0.2;                                  // the share of the radius its edge fades over
-const holeM = new DOMMatrix();
+const HOLE_DEPTH = 0.7;                                // straight down: the share of the radius the wall shows across
+const HOLE_SOFT = 0.11, HOLE_SOFT_LOW = 0.035;          // the share of the radius its rounded edge takes: across the top, across the bottom
 // The inside is the same every time for a given hole at a given scale, tilt and type, so it's drawn
 // once into a small image per hole and copied after that (a magnet or flashing hole is redrawn every
 // frame, and tiles get rebuilt on zoom).
@@ -3954,58 +4254,125 @@ function drawShaft(g, p) {
 }
 function paintShaft(g, p) {
   const r = p.r;
-  const pat = g.createPattern(feltWallTex, 'repeat');
+  shaftCloth(g, p);
   g.save(); circle(g, p.x, p.y, r); g.clip();
-  g.fillStyle = '#000'; g.fill();
-  if (LIFT > 0) tiltShaft(g, p, pat); else flatShaft(g, p, pat);
   circle(g, p.x, p.y, r); g.fillStyle = lampOf(g); g.fill();
-  circle(g, p.x, p.y, r); g.fillStyle = washPat(g); g.fill();
   // the near wall, under the top-left lip, is in shadow; the far wall faces the light
   const sh = g.createLinearGradient(p.x - r * 0.8, p.y - r * 0.8, p.x + r * 0.6, p.y + r * 0.6);
   sh.addColorStop(0, 'rgba(0,0,0,0.4)'); sh.addColorStop(0.6, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(255,255,255,0.05)');
   circle(g, p.x, p.y, r); g.fillStyle = sh; g.fill();
+  // then the depth over all of it: the cloth, its light and paint and the wall's shading all go dark
+  // the deeper they are, to pure black at the bottom, in one fill
+  circle(g, p.x, p.y, r); g.fillStyle = LIFT > 0 ? tiltDepth(g, p) : flatDepth(g, p); g.fill();
   g.restore();
-  // a soft edge: over the outer HOLE_SOFT of its radius the hole fades into the felt it's cut in (an
-  // ease, so the lip has no line at all), rather than stopping at a hard circle
-  const fe = g.createRadialGradient(p.x, p.y, r * (1 - HOLE_SOFT), p.x, p.y, r);
-  fe.addColorStop(0, '#000'); fe.addColorStop(0.45, 'rgba(0,0,0,0.8)'); fe.addColorStop(0.8, 'rgba(0,0,0,0.28)'); fe.addColorStop(1, 'rgba(0,0,0,0)');
-  g.globalCompositeOperation = 'destination-in'; g.fillStyle = fe; g.fillRect(p.x - r - 2, p.y - r - 2, 2 * r + 4, 2 * r + 4);
+  // a rounded edge: the hole eases into the felt it's cut in along a smooth S-curve (so the lip reads
+  // as the cloth turning over, with no line or band), rather than stopping at a hard circle. It's
+  // softest across the top (HOLE_SOFT of the radius) and tightest across the bottom (HOLE_SOFT_LOW),
+  // easing between the two round the circle. It's worked out pixel by pixel into a mask, which is the
+  // same for every hole of a size (at a scale), so it's made once each and shared; then the picture is
+  // cut to it
+  const T = g.getTransform(), W = g.canvas.width, H = g.canvas.height;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-in'; g.drawImage(holeMaskFor(T, W, H, p, r), 0, 0); g.restore();
   g.globalCompositeOperation = 'source-over';
 }
-// Straight down: an orthographic camera sees no wall at all, so the shaft is drawn as if seen down a
-// short lens: the wall closes in toward the middle the deeper it goes.
-function flatShaft(g, p, pat) {
-  const r = p.r, span = r * HOLE_DEPTH, du = span / HOLE_RINGS;
-  for (let k = 0; k < HOLE_RINGS; k++) {
-    const u0 = k * du, u1 = u0 + du, um = u0 + du / 2, rm = r - um;
-    const bm = Math.max(r * 0.02, r - um * (1 + HOLE_PULL * um / r)), sc = rm / bm;
-    holeM.a = holeM.d = sc; holeM.b = holeM.c = 0; holeM.e = p.x * (1 - sc); holeM.f = p.y * (1 - sc);
-    pat.setTransform(holeM);
-    g.beginPath(); g.arc(p.x, p.y, r - u0 + (k ? 0.25 : 0.5), 0, TAU); g.arc(p.x, p.y, r - u1, 0, TAU, true);
-    g.fillStyle = pat; g.fill();
-    g.fillStyle = `rgba(0,0,0,${Math.min(1, 0.06 + 0.98 * Math.pow(um / span, 1.8)).toFixed(3)})`; g.fill();
+const holeMasks = new Map();
+function holeMaskFor(T, W, H, p, r) {
+  // (the hole sits at the same place in every picture of its size, to within a pixel's fraction)
+  const key = `${W}x${H}|${r}|${T.a.toFixed(3)}|${T.d.toFixed(3)}`;
+  let m = holeMasks.get(key);
+  if (m) return m;
+  if (holeMasks.size > 24) holeMasks.clear();
+  m = document.createElement('canvas'); m.width = W; m.height = H;
+  const mg = m.getContext('2d'), img = mg.createImageData(W, H), d = img.data;
+  for (let j = 0; j < H; j++) {
+    const wy = (j + 0.5 - T.f) / T.d - p.y;
+    for (let i = 0; i < W; i++) {
+      const wx = (i + 0.5 - T.e) / T.a - p.x, dist = Math.hypot(wx, wy);
+      let a = 0;
+      if (dist < r) {
+        const up = dist > 0 ? (1 - wy / dist) / 2 : 1, soft = r * (HOLE_SOFT_LOW + (HOLE_SOFT - HOLE_SOFT_LOW) * up * up * (3 - 2 * up));
+        const t = Math.min(1, Math.max(0, (dist - (r - soft)) / soft));
+        a = 1 - t * t * (3 - 2 * t);
+      }
+      d[(i + j * W) * 4 + 3] = Math.round(a * 255);
+    }
   }
+  mg.putImageData(img, 0, 0);
+  holeMasks.set(key, m); return m;
 }
-// Tilted, it's the camera's own projection: the 3D camera is orthographic, so the wall at depth d is
-// the opening's circle, the same size, moved d·sin(tilt) down the screen (d·LIFT/KY in the table's
-// squashed y). A point inside the opening sees the far wall at the depth whose circle's top edge
-// passes through it, so the band of wall between depths d0 and d1 is the circle at d0 minus the circle
-// at d1. Only the far (top) wall shows, and more of it the steeper the tilt; past where the light runs
-// out it's black. The wall at depth d shows the board at r·e^(-d/r) from the centre (the cut itself at
-// d = 0), so the felt runs on over the edge and down.
-const HOLE_TILT_DEPTH = 2.2, HOLE_TILT_RINGS = 28;
-function tiltShaft(g, p, pat) {
-  const r = p.r, D = HOLE_TILT_DEPTH * r, s = d => d * LIFT / KY;
-  const dMax = Math.min(D, (2 * r) / (LIFT / KY)), dd = dMax / HOLE_TILT_RINGS;
-  for (let k = 0; k < HOLE_TILT_RINGS; k++) {
-    const d0 = k * dd, d1 = d0 + dd, dm = d0 + dd / 2, sm = s(dm);
-    const m = r / (r * Math.exp(-dm / r));             // board radius r·e^(-dm/r) lands on the wall's circle
-    holeM.a = holeM.d = m; holeM.b = holeM.c = 0; holeM.e = p.x * (1 - m); holeM.f = p.y + sm - p.y * m;
-    pat.setTransform(holeM);
-    g.beginPath(); g.arc(p.x, p.y + s(d0) - (k ? 0.25 : 0.5), r, 0, TAU); g.arc(p.x, p.y + s(d1), r, 0, TAU, true);
-    g.fillStyle = pat; g.fill('evenodd');
-    g.fillStyle = `rgba(0,0,0,${Math.min(1, 0.06 + 0.98 * Math.pow(dm / D, 1.6)).toFixed(3)})`; g.fill('evenodd');
+// The wall seen is the far one, straight down from the top of the cut, so each column of the hole
+// is the felt touching the top of the circle in that column, (dx, −√(r² − dx²)), stretched down.
+// It's all done pixel by pixel into the hole's picture (small, and made once): first which point of
+// the cut each pixel's centre is under, then each pixel's colour, with the checker averaged over the
+// patch of board its neighbours span, so the stripes' edges come out smooth. No angles are worked out.
+let washData = null;
+// how much of a pixel at p (in squares) spanning w is the second square colour: the checker's box
+// filtered average (exact for a pixel-sized box)
+const fr = v => v - Math.floor(v);
+const chkTri = (p, w) => 2 * (Math.abs(fr((p - 0.5 * w) * 0.5) - 0.5) - Math.abs(fr((p + 0.5 * w) * 0.5) - 0.5)) / w;
+// (down in the dark the cloth is soft anyway, so on a fine screen it's worked out at half the
+// picture's resolution and scaled up into it: a quarter of the work)
+const clothCv = document.createElement('canvas');
+function shaftCloth(g0, p) {
+  const T0 = g0.getTransform(), half = T0.a >= 2, k0 = half ? 0.5 : 1;
+  const W0 = g0.canvas.width, H0 = g0.canvas.height, W = Math.ceil(W0 * k0), H = Math.ceil(H0 * k0);
+  if (clothCv.width !== W || clothCv.height !== H) { clothCv.width = W; clothCv.height = H; }
+  const g = clothCv.getContext('2d'), T = new DOMMatrix([T0.a * k0, 0, 0, T0.d * k0, T0.e * k0, T0.f * k0]), r = p.r, r2 = r * r;
+  const img = g.createImageData(W, H), px = img.data, BX = new Float32Array(W * H), BY = new Float32Array(W * H);
+  const base = rgb(COL.felt), alt = base.map(v => Math.min(1, v * FELT_ALT));   // (the board's own two colours, so the wall carries on from it exactly)
+  if (!washData) washData = washTex.getContext('2d').getImageData(0, 0, WASH_PX, WASH_PX).data;
+  const WP = WASH_PX, iax = 1 / T.a, iay = 1 / T.d, iS = 1 / FELT_SQ;
+  // 1) which point of the cut is above each pixel's centre, in squares (NaN outside the hole)
+  for (let j = 0; j < H; j++) {
+    const dy = (j + 0.5 - T.f) * iay - p.y;
+    for (let i = 0; i < W; i++) {
+      const dx = (i + 0.5 - T.e) * iax - p.x, k = i + j * W;
+      if (dx * dx + dy * dy > r2) { BX[k] = BY[k] = NaN; continue; }
+      BX[k] = (p.x + dx) * iS; BY[k] = (p.y - Math.sqrt(r2 - dx * dx)) * iS;
+    }
   }
+  // 2) each pixel's colour: the checker over the patch it covers, then the paint on the cloth there
+  // (it's on the cloth, so it goes down the wall with it); the hole's own edge is smoothed too
+  const span = (A, k, i, j) => {
+    const a = A[k], nx = i + 1 < W && A[k + 1] === A[k + 1] ? A[k + 1] : i > 0 ? A[k - 1] : a, ny = j + 1 < H && A[k + W] === A[k + W] ? A[k + W] : j > 0 ? A[k - W] : a;
+    return Math.abs((nx === nx ? nx : a) - a) + Math.abs((ny === ny ? ny : a) - a) + 1e-4;
+  };
+  for (let j = 0; j < H; j++) {
+    const dy = (j + 0.5 - T.f) * iay - p.y;
+    for (let i = 0; i < W; i++) {
+      const k = i + j * W, x = BX[k];
+      if (!(x === x)) continue;
+      const y = BY[k], wx = Math.min(1, span(BX, k, i, j)), wy = Math.min(1, span(BY, k, i, j));
+      const m = 0.5 + 0.5 * chkTri(x, wx) * chkTri(y, wy);   // (the board's square (0, 0) is the second colour)
+      const u = ((Math.floor(x * FELT_SQ / WASH_K) % WP) + WP) % WP, v = ((Math.floor(y * FELT_SQ / WASH_K) % WP) + WP) % WP, q = (u + v * WP) * 4, wa = washData[q + 3] / 255;
+      const dx = (i + 0.5 - T.e) * iax - p.x, edge = Math.min(1, Math.max(0, (r - Math.sqrt(dx * dx + dy * dy)) * T.a + 0.5));
+      const o = k * 4;
+      px[o] = ((base[0] + (alt[0] - base[0]) * m) * 255) * (1 - wa) + washData[q] * wa;
+      px[o + 1] = ((base[1] + (alt[1] - base[1]) * m) * 255) * (1 - wa) + washData[q + 1] * wa;
+      px[o + 2] = ((base[2] + (alt[2] - base[2]) * m) * 255) * (1 - wa) + washData[q + 2] * wa;
+      px[o + 3] = edge * 255;
+    }
+  }
+  g.putImageData(img, 0, 0);
+  g0.save(); g0.setTransform(1, 0, 0, 1, 0, 0); g0.imageSmoothingEnabled = true; g0.clearRect(0, 0, W0, H0); g0.drawImage(clothCv, 0, 0, W / k0, H / k0); g0.restore();
+}
+// how dark the wall is u of the way down (0 at the cut, so it matches the felt there; black at the bottom)
+const flatDark = u => Math.min(1, 1.02 * Math.pow(u, 1.35));
+// the depth as one gradient: rings round the centre, deepest first, and inside them it's black
+function flatDepth(g, p) {
+  const r = p.r, span = r * HOLE_DEPTH, gr = g.createRadialGradient(p.x, p.y, r - span, p.x, p.y, r);
+  for (let i = 0; i <= 12; i++) gr.addColorStop(i / 12, `rgba(0,0,0,${flatDark(1 - i / 12).toFixed(3)})`);
+  return gr;
+}
+const HOLE_TILT_DEPTH = 3.8;   // tilted: how deep the wall shows before it's lost in the dark (in radii)
+// The depth as one gradient: a radial gradient between the cut's circle and the deepest one is
+// exactly the wall's circles at each depth in between (the same size, sliding down), and where they
+// overlap it takes the deepest, as the eye does (just as shaftAt does); past the deepest it's black
+function tiltDepth(g, p) {
+  const r = p.r, D = HOLE_TILT_DEPTH * r, dMax = Math.min(D, (2 * r) / (LIFT / KY));
+  const gr = g.createRadialGradient(p.x, p.y, r, p.x, p.y + dMax * LIFT / KY, r);
+  for (let i = 0; i <= 12; i++) gr.addColorStop(i / 12, `rgba(0,0,0,${Math.min(1, 1.1 * Math.pow(i / 12 * dMax / D, 1.25)).toFixed(3)})`);
+  return gr;
 }
 // the lamp over the table: a touch brighter in the middle, falling off gently to a touch darker at
 // the edge, in world space (the holes' walls get it too, so they match the felt round them)
@@ -4177,7 +4544,8 @@ function needMarks() {
   for (const q of pendingLoot) if (q.p && inView(q.p.x, q.p.y, 80)) return true;
   for (const e of erupts) if (inView(e.x, e.y, 200)) return true;
   for (const p of pockets) if (p.mag && inView(p.x, p.y, 80)) return true;
-  return MODE === 'party' && party.phase !== 'off' && party.phase !== 'podium' && party.phase !== 'lobby';
+  // (a party round only if it draws on the felt at all: Crown and Zombies don't)
+  return MODE === 'party' && party.phase !== 'off' && party.phase !== 'podium' && party.phase !== 'lobby' && !!curRound()?.felt;
 }
 // copy the visible tiles; ox, oy = where world (0,0) lands in device pixels (whole pixels)
 function drawTiles(ox, oy) {
@@ -4295,12 +4663,19 @@ function drawIce(g) {
 function drawLeaderRing(g) {
   if (!leader || !leader.alive || !inView(leader.ball.x, leader.ball.y)) return;
   const b = leader.ball, x = scrX(b.x), y = scrY(b.y, b.r), r = b.r * ZOOM;
+  if (sprGL) {
+    const a = ballAlpha(b);
+    scrSpr(x, y, 0, r + 4.85, r + 4.85, r + 3.6, 2.5, 'rgba(0,0,0,0.45)', a, SPR.RING); scrSpr(x, y, 0, r + 3.85, r + 3.85, r + 2.6, 2.5, LEAD_COL, a, SPR.RING);
+    return;
+  }
   g.save(); g.setTransform(DPR, 0, 0, DPR, 0, 0);
   g.globalAlpha = ballAlpha(b);
   g.lineWidth = 2.5; g.strokeStyle = 'rgba(0,0,0,0.45)'; circle(g, x, y, r + 3.6); g.stroke();
   g.lineWidth = 2.5; g.strokeStyle = LEAD_COL; circle(g, x, y, r + 2.6); g.stroke();
   g.restore();
 }
+const AIM_FADE = 0.35, AIM_FADE_HOLE = 0.55;
+let aimK = 0, HOLE_FADE = 1, FLOAT_FADE = 1;
 function render() {
   let sx = 0, sy = 0; if (shake > 0 && !REDUCE) { sx = (Math.random() - 0.5) * shake * 16; sy = (Math.random() - 0.5) * shake * 16; }
   const z = ZOOM;
@@ -4314,7 +4689,7 @@ function render() {
   const tx = Math.round(DPR * (VW / 2 - cam.x * z + sx)), ty = Math.round(DPR * (VH / 2 - cam.y * z * KY + sy));
   RX = tx; RY = ty;
 
-  gatherVis(); PXW = 0.75 / ZOOM;
+  gatherVis(); PXW = aimPx();
   // ---- table layer: the still felt picture, slid into place ----
   feltLayer(tx, ty);
   for (const p of pockets) { p.vpx = 0; p.vpy = p.r * (1 - LIP) * 0.6 * LIFT; }   // (potted balls drop straight down the shaft, which tilted is slightly lower)
@@ -4354,34 +4729,48 @@ function render() {
   }
 
   // ---- ball layer ----
-  if (gl) renderBallsGL((DPR * VW / 2 - tx) / sc, (DPR * VH / 2 - ty) / (sc * KY));
+  SPR_CAM.x = (DPR * VW / 2 - tx) / sc; SPR_CAM.y = (DPR * VH / 2 - ty) / (sc * KY);
+  if (gl) { tagsFrame(); renderBallsGL(SPR_CAM.x, SPR_CAM.y); }
   else for (const b of balls.concat(sinkers, ghost ? [ghost] : [])) if (inView(b.x, b.y)) drawBallFlat(b);
 
+  // while you aim, what doesn't help the shot fades back: others' names, the crowns, gold-ball values,
+  // the floating numbers (to AIM_FADE), the holes' labels a little less (AIM_FADE_HOLE), and the
+  // leaderboard and minimap (body.aiming). Eased over about 0.15 s each way.
+  const nowR = performance.now(), rdt = Math.min(0.1, (nowR - (render.t || nowR)) / 1000); render.t = nowR;
+  const aimingNow = !!(drag && dragAim() && (me.alive || ghost));
+  aimK += ((aimingNow ? 1 : 0) - aimK) * (1 - Math.exp(-rdt / 0.05));
+  if (aimingNow !== document.body.classList.contains('aiming')) document.body.classList.toggle('aiming', aimingNow);
+  const fadeA = 1 - (1 - AIM_FADE) * aimK, fadeH = 1 - (1 - AIM_FADE_HOLE) * aimK;
+  HOLE_FADE = fadeH; FLOAT_FADE = fadeA;
   // ---- effects layer ----
+  // Only what's left to draw in 2D goes here (your aim guide, a few rare effects): on a frame with
+  // nothing on it the layer is faded right out, so the phone doesn't blend a whole empty screen over
+  // the game, and it's only cleared when the last frame left something on it
   const g = fctx;
-  g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, VW, VH);
+  fxInk = false;
+  if (fxWas) { g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, VW, VH); }
   g.setTransform(sc, 0, 0, sc * KY, tx, ty - R * LIFT * sc);   // the plane through ball centres
   if (me.alive && gl) drawXray(g);
   g.setTransform(sc, 0, 0, sc * KY, tx, ty - R * LIFT * sc);
   drawIce(g);
   drawLeaderRing(g);
-  if (me.alive) { drawMovementDots(g, null); if (drag && dragAim()) drawAim(g); drawDragOrigin(g); }
+  if (me.alive) { drawMovementDots(g, null, !!sprGL); if (drag && dragAim()) drawAim(g); else drawCueThrust(g); drawDragOrigin(g); }
   else if (ghost) { if (drag && dragAim()) drawGhostAim(g); drawDragOrigin(g); }
-  drawTells(g);
+  drawTells(g, !!sprGL);
   drawChips(g);
   if (flat2d) for (let i = 0; i < vis.length; i++) { const b = vis[i]; if (b.kind === 'loot') glints(g, b, 2, 0.8); else if (b.kind === 'midas' && b.goldT > time) glints(g, b, 3, 0.9); }
-  for (const p of players) { if ((p.isBot || p.remote || p.netAim) && p.alive && p.windup && inView(p.ball.x, p.ball.y)) drawCue(g, p.ball, p.windup.dx, p.windup.dy, p.windup.pow * clamp(1 - p.windup.t / (p.windup.t0 || 1), 0, 1), '#6b4a2e'); }
+  for (const p of players) { if ((p.isBot || p.remote || p.netAim) && p.alive && p.windup && inView(p.ball.x, p.ball.y)) cueAt(g, p.ball, p.windup.dx, p.windup.dy, p.windup.pow * clamp(1 - p.windup.t / (p.windup.t0 || 1), 0, 1), '#6b4a2e'); }
   g.textAlign = 'center'; g.textBaseline = 'middle';
   if (breaker && !breaker.dead && inView(breaker.x, breaker.y, 60)) drawBreaker(g, breaker);
-  for (let i = 0; i < vis.length; i++) { const b = vis[i]; if (b.kind === 'loot') label(g, b.value, 14, LOOT_COL, b.x, b.y - b.r - 13); }
+  for (let i = 0; i < vis.length; i++) { const b = vis[i]; if (b.kind === 'loot') tagAt(g, labelTag(b.value, 14, LOOT_COL), b.x, b.y - b.r - 13, fadeA); }
   for (const p of players) {
     if (!p.alive || !inView(p.ball.x, p.ball.y)) continue;
     if (p === me && drag && dragAim()) continue;
-    if (p === leader) { drawCrown(g, p.ball.x, p.ball.y - p.ball.r - 29, 13, LEAD_COL); g.globalAlpha = 1; }
-    label(g, p.name, 12, p === leader ? LEAD_COL : '#ffffff', p.ball.x, p.ball.y - p.ball.r - 13);
+    if (p === leader) tagAt(g, crownTag(13, LEAD_COL), p.ball.x, p.ball.y - p.ball.r - 29, fadeA);
+    tagAt(g, labelTag(p.name, 12, p === leader ? LEAD_COL : '#ffffff'), p.ball.x, p.ball.y - p.ball.r - 13, fadeA);
   }
   if (MODE === 'party' && party.phase === 'play') curRound()?.air?.(g);
-  if (ghost && !(drag && dragAim())) { g.globalAlpha = GHOST_A; label(g, 'Ghost', 12, '#ffffff', ghost.x, ghost.y - ghost.r - 13); g.globalAlpha = 1; }
+  if (ghost && !(drag && dragAim())) tagAt(g, labelTag('Ghost', 12, '#ffffff'), ghost.x, ghost.y - ghost.r - 13, GHOST_A);
   if (me.alive && me.ball.frozenT > time) {
     const b = me.ball, o = 4 * Math.sin(time * 14), d = b.r + 12, h = 6;
     g.strokeStyle = ICE_COL; g.lineWidth = 2.5; g.lineCap = 'round'; g.lineJoin = 'round';
@@ -4428,7 +4817,9 @@ function render() {
       let sq = 0, gr = 1, up = 0;
       // the tap's springs (lift in the menu's px, scaled to the number's size), on top of the rise
       if (!REDUCE) { sq = clamp(f.sq, UI.SQ_MIN, UI.SQ_MAX); gr = 1 + TAP_GROW * f.lift; up = f.rise * (1 - 2 ** (-10 * Math.min(1, f.age / half))) + MENU.LIFT_PX * f.lift * f.size / 18; }
-      g.globalAlpha = f.t < half ? 1 : Math.max(0, 1 - (f.t - half) / half);
+      const fa = (f.t < half ? 1 : Math.max(0, 1 - (f.t - half) / half)) * FLOAT_FADE;
+      if (sprGL) { f.tok = typeof f.text === 'number'; tagAt(g, paintedTag(f), f.x, f.y - up / KY, fa, gr * (1 + sq), gr * (1 - sq)); continue; }
+      g.globalAlpha = fa;
       const k = m.a * gr;
       g.setTransform(k * (1 + sq), 0, 0, k * (1 - sq), m.a * f.x + m.e, m.d * f.y + m.f - up * m.a);
       drawFloat(g, f);
@@ -4437,6 +4828,10 @@ function render() {
   }
   drawEdgeHoles(g);
   drawFlyers(g);
+  // the top sprite layer: everything pushed above (tags, cues, tells, dots, edge marks), in one draw
+  if (sprGL && gl) sprFlush(SPR_CAM.x, SPR_CAM.y, R * LIFT, false);
+  fxWas = fxInk;
+  if (fxInk !== fxShown) { fxShown = fxInk; fxc.style.opacity = fxInk ? '' : '0'; }
   drawSpotlight(sc, tx, ty);
 }
 // While the death card darkens the screen, the gold balls on the table show through it at full
@@ -4481,6 +4876,19 @@ function drawSpotlight(sc, tx, ty) {
 const EDGE_RANGE = 600, MAX_MARKS = 4;
 const markList = [];
 // where the ray from the screen centre toward (sx, sy) meets the usable screen edge
+// a sprite given in screen px (the edge marks): turned into the world units the sprite layer draws in
+// (its flush lifts everything by R·LIFT, which is taken back off here)
+function scrSpr(sx, sy, ang, rx, ry, p1, p2, col, a, kind) {
+  const z = ZOOM, vert = Math.abs(Math.sin(ang)) > 0.5, kx = vert ? 1 / (z * KY) : 1 / z, ky = vert ? 1 / z : 1 / (z * KY);
+  spr(SPR_CAM.x + (sx - VW / 2) / z, SPR_CAM.y + ((sy - VH / 2) / z + R * LIFT) / KY, ang, rx * kx, ry * ky, p1 * (kind === SPR.RING ? 1 / z : kx), p2 * (kind === SPR.RING ? 1 / z : ky), col, a, kind);
+}
+const SPR_CAM = { x: 0, y: 0 };
+// a tag centred on screen px (sx, sy), scaled k
+function scrTag(e, sx, sy, k, a) {
+  if (!gl || !tagPack(e)) return;
+  const z = ZOOM;
+  sprTag(SPR_CAM.x + (sx - VW / 2) / z, SPR_CAM.y + ((sy - VH / 2) / z + R * LIFT) / KY, e.w / 2 * k / z, e.h / 2 * k / (z * KY), e, a);
+}
 function markAt(sx, sy) {
   const hw = VW / 2, hh = VH / 2, qx = sx - hw, qy = sy - hh, m = 6;
   const hit = (top, right, bottom) => {
@@ -4534,6 +4942,7 @@ function drawEdgeHoles(g) {
   g.lineCap = 'round';
   for (const o of markList) {
     const near = 1 - Math.max(0, o.d) / EDGE_RANGE, { ex, ey, side } = markAt(o.sx, o.sy), half = 4 + 8 * near;
+    if (sprGL) { const hw = (2.5 + near) / 2; scrSpr(ex, ey, side ? Math.PI / 2 : 0, half + hw, hw, half, hw, o.col, fade(near), SPR.STREAK); continue; }
     g.strokeStyle = o.col; g.globalAlpha = fade(near); g.lineWidth = 2.5 + near;
     g.beginPath();
     if (side) { g.moveTo(ex, ey - half); g.lineTo(ex, ey + half); } else { g.moveTo(ex - half, ey); g.lineTo(ex + half, ey); }
@@ -4562,6 +4971,7 @@ function drawEdgeHoles(g) {
       outlined(g, b.value, ex + (ex < VW / 2 ? 1 : -1) * (rr + 8), clamp(ey, 50, VH - 20), `700 13px ${FONT}`, LOOT_COL);
     }
     if (a <= 0.01) continue;
+    if (sprGL) { scrSpr(ex, ey, 0, rr + 1.3, rr + 1.3, 0, 0, 'rgba(11,22,27,0.6)', a, SPR.ELLIPSE); scrSpr(ex, ey, 0, rr, rr, 0, 0, LOOT_COL, a, SPR.ELLIPSE); continue; }
     g.globalAlpha = a; g.fillStyle = 'rgba(11,22,27,0.6)'; circle(g, ex, ey, rr + 1.3); g.fill();
     g.fillStyle = LOOT_COL; circle(g, ex, ey, rr); g.fill();
   }
@@ -4570,8 +4980,9 @@ function drawEdgeHoles(g) {
     const b = breaker, sx = scrX(b.x), sy = scrY(b.y);
     if (off(sx, sy, b.r * k)) {
       const d = gap(sx, sy), near = 1 - Math.min(1, d / 2600), m0 = markAt(sx, sy), ex = clamp(m0.ex, 12, VW - 12), ey = clamp(m0.ey, 12, VH - 12);
-      g.globalAlpha = 0.5 + 0.5 * near; g.fillStyle = '#2b3036'; circle(g, ex, ey, 6 + 3 * near); g.fill();
-      g.lineWidth = 1.5; g.strokeStyle = 'rgba(230,236,240,0.9)'; g.stroke();
+      const rr = 6 + 3 * near, a = 0.5 + 0.5 * near;
+      if (sprGL) { scrSpr(ex, ey, 0, rr, rr, 0, 0, '#2b3036', a, SPR.ELLIPSE); scrSpr(ex, ey, 0, rr + 0.75, rr + 0.75, rr, 1.5, 'rgba(230,236,240,0.9)', a, SPR.RING); }
+      else { g.globalAlpha = a; g.fillStyle = '#2b3036'; circle(g, ex, ey, rr); g.fill(); g.lineWidth = 1.5; g.strokeStyle = 'rgba(230,236,240,0.9)'; g.stroke(); }
     }
   }
   // someone off screen lining up a shot that could reach you: a red "!" on the edge toward them.
@@ -4610,7 +5021,8 @@ function drawEdgeHoles(g) {
       const d = gap(sx, sy);
       if (d < LEAD_RANGE) {
         const near = 1 - d / LEAD_RANGE, { ex, ey } = markAt(sx, sy);
-        drawCrown(g, clamp(ex, 10, VW - 10), clamp(ey, 8, VH - 8), 11 + 3 * near, LEAD_COL, fade(near) * 0.95 + 0.05 * (near > 0));
+        const cx = clamp(ex, 10, VW - 10), cy = clamp(ey, 8, VH - 8), w = 11 + 3 * near, a = fade(near) * 0.95 + 0.05 * (near > 0);
+        if (sprGL) scrTag(crownTag(14, LEAD_COL), cx, cy, w / 14, a); else drawCrown(g, cx, cy, w, LEAD_COL, a);
       }
     }
   }
@@ -5091,7 +5503,7 @@ const ROUNDS = {
       return { ...steer(p, t.o.x, t.o.y, t.d + 160, 0.95), urgent: party.t < 10 || t.d < 300 };
     },
     // the crown over each one, as the arena's leader wears it
-    air(g) { for (const p of party.crowns || []) if (p.alive && p.ball && inView(p.ball.x, p.ball.y)) { drawCrown(g, p.ball.x, p.ball.y - p.ball.r - 29, 13, LEAD_COL); g.globalAlpha = 1; } },
+    air(g) { for (const p of party.crowns || []) if (p.alive && p.ball && inView(p.ball.x, p.ball.y)) tagAt(g, crownTag(13, LEAD_COL), p.ball.x, p.ball.y - p.ball.r - 29); },
     bar: () => { const C = party.crowns || new Set(); return C.has(me) ? '<b style="color:var(--gold)">You have the crown!</b>' : `${C.size} crown${C.size === 1 ? '' : 's'} · bump to steal`; },
     summary: () => { const C = [...(party.crowns || [])]; return C.length ? `${C.map(p => esc(p.name)).join(', ')} kept the crown` : 'Nobody kept the crown'; }
   },
@@ -5654,6 +6066,7 @@ const confCv = document.createElement('canvas'); confCv.id = 'confetti'; confCv.
 const confG = confCv.getContext('2d'), conf = [];
 let confLast = 0;
 function confetti(big) {
+  sfxFanfare(big);
   const n = REDUCE ? (big ? 40 : 18) : (big ? 160 : 70);
   const shots = big ? [[0.02, -1], [0.98, 1]] : [[0.5, 0]];
   for (const [fx, dir] of shots) for (let i = 0; i < n / shots.length; i++) {
@@ -5749,7 +6162,19 @@ function partyKO(victim, killer, x, y, edge) {
   victim.respawnT = PARTY_RESPAWN;
   cardFor(victim, killer ? 'Knocked out!' : edge ? 'Fell off!' : 'Scratched!', killer ? `by ${esc(killer.name)}` : '');
 }
+// what a round sounds like as it goes: 3-2-1-Go, a tick for each of its last seconds, a bell at its end
+function partySounds() {
+  const ph = party.phase, r = curRound();
+  if (ph !== party.sPh) { if (ph === 'result') sfxRoundEnd(); party.sPh = ph; party.sN = null; }
+  let n = null;
+  if (ph === 'intro') n = party.t > 0.2 ? Math.ceil(party.t - 0.2) : 0;
+  else if (ph === 'play' && r && party.t <= 5 && party.t > 0) n = Math.ceil(party.t);
+  if (n === null || n === party.sN) return;
+  party.sN = n;
+  if (ph === 'intro') { if (n <= 3) sfxCount(n); } else sfxTick(n);
+}
 function partyUpdate(dt) {
+  partySounds();
   if (party.phase === 'off' || party.phase === 'podium' || party.phase === 'lobby') { uiHide(roundBar); return; }
   party.t -= dt;
   const r = curRound();
@@ -6992,7 +7417,7 @@ function levelUp(L) {
   $('lvlUpN').textContent = `Level ${L}`; $('lvlUpT').textContent = 'Level up';
   const el = $('lvlUp'); uiHide(el); uiShow(el);
   clearTimeout(lvlUpT); lvlUpT = setTimeout(() => uiHide(el), 1900);
-  confetti(false); sfxTing(cam.x, cam.y, true); buzz(30);
+  confetti(false); buzz(30);
   const h = $('hudLvl'); h.classList.remove('pop'); void h.offsetWidth; h.classList.add('pop');
 }
 // something happened that challenges count: n more of kind k (or, for a 'max' kind, a new best of n)
